@@ -1,0 +1,17 @@
+{
+  "name": "llm-web-ui",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jasmine"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "jasmine": "^5.1.0"
+  }
+}
