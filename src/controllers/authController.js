@@ -15,29 +15,65 @@ function getCasConfig(req) {
   };
 }
 
-function signup(req, res) {
+async function signup(req, res) {
   const { username, password } = req.body;
 
   try {
-    const user = userService.createUser(username, password);
-    req.session.user = { id: user.id, username: user.username, authProvider: "local" };
+    const user = await userService.createUser(username, password);
+
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      authProvider: "local"
+    };
+
     return res.redirect("/dashboard");
   } catch (error) {
     return res.status(400).send(error.message);
   }
 }
 
-function login(req, res) {
+// function signup(req, res) {
+//   const { username, password } = req.body;
+
+//   try {
+//     const user = userService.createUser(username, password);
+//     req.session.user = { id: user.id, username: user.username, authProvider: "local" };
+//     return res.redirect("/dashboard");
+//   } catch (error) {
+//     return res.status(400).send(error.message);
+//   }
+// }
+
+async function login(req, res) {
   const { username, password } = req.body;
-  const user = userService.validateUser(username, password);
+
+  const user = await userService.validateUser(username, password);
 
   if (!user) {
     return res.status(401).send("Invalid username or password.");
   }
 
-  req.session.user = { id: user.id, username: user.username, authProvider: "local" };
+  req.session.user = {
+    id: user.id,
+    username: user.username,
+    authProvider: "local"
+  };
+
   return res.redirect("/dashboard");
 }
+
+// function login(req, res) {
+//   const { username, password } = req.body;
+//   const user = userService.validateUser(username, password);
+
+//   if (!user) {
+//     return res.status(401).send("Invalid username or password.");
+//   }
+
+//   req.session.user = { id: user.id, username: user.username, authProvider: "local" };
+//   return res.redirect("/dashboard");
+// }
 
 function logout(req, res) {
   const { logoutUrl, baseUrl } = getCasConfig(req);
@@ -86,10 +122,13 @@ async function casCallback(req, res) {
       return res.status(401).send("CAS user not found in validation response.");
     }
 
-    let user = userService.findUserByUsername(netid);
+    // let user = userService.findUserByUsername(netid);
+    let user = await userService.findUserByUsername(netid);
+
 
     if (!user) {
-      user = userService.createUser(netid, "CAS_AUTH_ONLY");
+      // user = userService.createUser(netid, "CAS_AUTH_ONLY");
+      user = await userService.createUser(netid, "CAS_AUTH_ONLY");
     }
 
     req.session.user = {
