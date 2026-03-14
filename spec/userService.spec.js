@@ -64,26 +64,35 @@ describe("userService", () => {
   });
 
   it("throws an error if username is missing", async () => {
-    await expectAsync(
-      userService.createUser("", "1234")
-    ).toBeRejectedWithError("Username and password are required.");
+    try {
+      await userService.createUser("", "1234");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toBe("Username and password are required.");
+    }
   });
 
   it("throws an error if password is missing", async () => {
-    await expectAsync(
-      userService.createUser("alice", "")
-    ).toBeRejectedWithError("Username and password are required.");
+    try {
+      await userService.createUser("alice", "");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toBe("Username and password are required.");
+    }
   });
 
   it("throws an error if user already exists", async () => {
     await userService.createUser("alice", "1234");
 
-    await expectAsync(
-      userService.createUser("alice", "abcd")
-    ).toBeRejectedWithError("User already exists.");
+    try {
+      await userService.createUser("alice", "abcd");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toBe("User already exists.");
+    }
   });
 
-  it("validates correct username and password", async () => {
+  it("validates a correct username and password", async () => {
     await userService.createUser("alice", "1234");
 
     const user = await userService.validateUser("alice", "1234");

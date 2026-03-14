@@ -8,5 +8,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   port: process.env.DB_PORT
 });
+console.log("DB_USER:", process.env.DB_USER);
+
 
 module.exports = pool;
