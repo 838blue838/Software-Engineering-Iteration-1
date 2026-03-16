@@ -108,6 +108,19 @@ describe("authController", () => {
     expect(res.send).toHaveBeenCalledWith("Invalid username or password.");
   });
 
+  it("login does not set session on failed login", async () => {
+    const req = {
+      body: { username: "bob", password: "wrong" },
+      session: {}
+    };
+
+    const res = makeRes();
+
+    await authController.login(req, res);
+
+    expect(req.session.user).toBeUndefined();
+  });
+
   it("login stores session user when credentials are valid", async () => {
     await userService.createUser("bob", "pass");
 
@@ -122,6 +135,42 @@ describe("authController", () => {
 
     expect(req.session.user.username).toBe("bob");
     expect(res.redirect).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("logout clears session and redirects to /", (done) => {
+    const req = {
+      session: {
+        user: { username: "bob", authProvider: "local" },
+        destroy: jasmine.createSpy("destroy").and.callFake((cb) => {
+          req.session.user = undefined;
+          cb();
+        })
+      },
+      app: { locals: { baseUrl: "http://localhost:3000", casBaseUrl: "https://cas.rutgers.edu" } }
+    };
+
+    const res = makeRes();
+    res.redirect = jasmine.createSpy("redirect").and.callFake(() => {
+      expect(req.session.user).toBeUndefined();
+      expect(res.redirect).toHaveBeenCalledWith("/");
+      done();
+    });
+
+    authController.logout(req, res);
+  });
+
+  it("casCallback returns 400 when ticket is missing", async () => {
+    const req = {
+      query: {},
+      app: { locals: { baseUrl: "http://localhost:3000", casBaseUrl: "https://cas.rutgers.edu" } }
+    };
+
+    const res = makeRes();
+
+    await authController.casCallback(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith("Missing CAS ticket.");
   });
 
 });

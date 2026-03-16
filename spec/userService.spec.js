@@ -109,4 +109,17 @@ describe("userService", () => {
     expect(user).toBeNull();
   });
 
+  it("validateUser returns null for non-existent username", async () => {
+    const user = await userService.validateUser("nobody", "pass");
+
+    expect(user).toBeNull();
+  });
+
+  it("auto-increments user IDs", async () => {
+    const user1 = await userService.createUser("alice", "1234");
+    const user2 = await userService.createUser("bob", "5678");
+
+    expect(user2.id).toBeGreaterThan(user1.id);
+  });
+
 });

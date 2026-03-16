@@ -1,4 +1,9 @@
 const usersData = require("../data/users");
+const crypto = require("crypto");
+
+function hashPassword(password) {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
 
 async function createUser(username, password) {
   if (!username || !password) {
@@ -21,7 +26,7 @@ async function validateUser(username, password) {
     return null;
   }
 
-  if (user.password !== password) {
+  if (user.password !== hashPassword(password)) {
     return null;
   }
 
