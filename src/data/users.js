@@ -1,18 +1,12 @@
 const db = require("../config/db");
-const crypto = require("crypto");
-
-function hashPassword(password) {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
 
 async function createUser(username, password, authProvider = "local") {
-  const hashed = authProvider === "local" ? hashPassword(password) : password;
   const query = `
     INSERT INTO users (username, password, auth_provider)
     VALUES (?, ?, ?)
   `;
 
-  const [result] = await db.execute(query, [username, hashed, authProvider]);
+  const [result] = await db.execute(query, [username, password, authProvider]);
 
   return {
     id: result.insertId,
@@ -33,6 +27,7 @@ async function findUserByUsername(username) {
 
 async function clearUsers() {
   await db.execute("DELETE FROM users");
+  await db.execute("ALTER TABLE users AUTO_INCREMENT = 1");
 }
 
 module.exports = {

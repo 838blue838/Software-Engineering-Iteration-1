@@ -1,5 +1,5 @@
-const usersData = require("../data/users");
 const crypto = require("crypto");
+const usersData = require("../data/users");
 
 function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -16,7 +16,7 @@ async function createUser(username, password) {
     throw new Error("User already exists.");
   }
 
-  return await usersData.createUser(username, password, "local");
+  return await usersData.createUser(username, hashPassword(password), "local");
 }
 
 async function validateUser(username, password) {
