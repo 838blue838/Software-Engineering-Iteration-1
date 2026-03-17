@@ -29,7 +29,7 @@ async function signup(req, res) {
 
     return res.redirect("/dashboard");
   } catch (error) {
-    return res.status(400).send(error.message);
+    return res.redirect("/signup?error=" + encodeURIComponent(error.message));
   }
 }
 
@@ -144,10 +144,16 @@ async function casCallback(req, res) {
   }
 }
 
+async function resetUsers(req, res) {
+  await userService.clearUsers();
+  return res.status(200).send("Users cleared.");
+}
+
 module.exports = {
   signup,
   login,
   logout,
   casLogin,
-  casCallback
+  casCallback,
+  resetUsers
 };

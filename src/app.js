@@ -23,7 +23,7 @@ app.use(
 app.locals.baseUrl = process.env.BASE_URL || "http://localhost:3000";
 app.locals.casBaseUrl = process.env.CAS_BASE_URL || "https://cas.rutgers.edu";
 
-app.use("/static", express.static(path.join(__dirname, "views")));
+app.use(express.static(path.join(__dirname, "views")));
 
 app.use("/", pageRoutes);
 app.use("/api/auth", authRoutes);

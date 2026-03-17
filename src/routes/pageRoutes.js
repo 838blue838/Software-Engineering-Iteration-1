@@ -20,4 +20,12 @@ router.get("/dashboard", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "../views/dashboard.html"));
 });
 
+router.get("/about", (req, res) => {
+  res.sendFile(path.join(__dirname, "../views/about.html"));
+});
+
+router.get("/profile", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "../views/profile.html"));
+});
+
 module.exports = router;

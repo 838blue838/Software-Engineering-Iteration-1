@@ -6,6 +6,12 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const browser = await puppeteer.launch({ headless: false, slowMo: 50 });
   const page = await browser.newPage();
 
+  // 0. Reset users so demo can run fresh each time
+  await page.goto('http://localhost:3000');
+  await page.evaluate(async () => {
+    await fetch('/api/auth/reset-users', { method: 'POST' });
+  });
+
   // 1. Landing page
   console.log('Step 1: Visiting landing page...');
   await page.goto('http://localhost:3000');
