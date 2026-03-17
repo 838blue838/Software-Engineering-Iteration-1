@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Dashboard</h1>
+      <p>You are successfully logged in.</p>
+      <div class="dashboard-box">
+        Status: Authenticated user session is active.
+      </div>
+      <div class="nav-links">
+        <a class="button button-secondary" href="profile.html">View Profile</a>
+        <a class="button button-secondary" href="about.html">About This Project</a>
+      </div>
+      <form action="/api/auth/logout" method="POST">
+        <button type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
