@@ -1,0 +1,52 @@
+<!DOCTYPE html> <!-- Iteration 2 Progression, Chat page dedicated for talking to the LLM-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>LLM Chat</h1>
+
+      <div class="dashboard-box">
+        Start a new conversation or continue an existing one.
+      </div>
+
+      <!-- Chat Window -->
+      <div class="chat-window" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+        <p><strong>You:</strong> Hello</p>
+        <p><strong>LLM:</strong> Hi! How can I help you?</p>
+      </div>
+
+      <!-- Message Input -->
+      <form action="/api/chat" method="POST">
+        <input 
+          type="text" 
+          name="message" 
+          placeholder="Type your message..." 
+          style="width: 80%; padding: 8px;" 
+          required
+        >
+        <button type="submit">Send</button>
+      </form>
+
+      <br>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a class="button button-secondary" href="history.html">View History</a>
+        <a class="button button-secondary" href="dashboard.html">Back to Dashboard</a>
+      </div>
+
+      <!-- New Chat -->
+      <form action="/api/chat/new" method="POST" style="margin-top: 10px;">
+        <button type="submit">Start New Chat</button>
+      </form>
+
+    </div>
+  </div>
+</body>
+</html>
