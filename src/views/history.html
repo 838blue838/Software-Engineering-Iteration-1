@@ -1,0 +1,63 @@
+<!DOCTYPE html> <!-- Iteration 2 Progression, History page dedicated to looking at the history of conversations-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversation History</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Conversation History</h1>
+
+      <div class="dashboard-box">
+        View and search your previous conversations.
+      </div>
+
+      <!-- Search Bar -->
+      <form action="/api/conversations/search" method="GET" style="margin-bottom: 15px;">
+        <input 
+          type="text" 
+          name="q" 
+          placeholder="Search conversations..." 
+          style="width: 80%; padding: 8px;" 
+          required
+        >
+        <button type="submit">Search</button>
+      </form>
+
+      <!-- Conversation List -->
+      <div class="history-list" style="border: 1px solid #ccc; padding: 10px;">
+        <p>
+          <strong>Chat 1:</strong> Binary Trees Help<br>
+          <a href="/chat.html?id=1">Open Conversation</a>
+        </p>
+
+        <hr>
+
+        <p>
+          <strong>Chat 2:</strong> API Design Questions<br>
+          <a href="/chat.html?id=2">Open Conversation</a>
+        </p>
+
+        <hr>
+
+        <p>
+          <strong>Chat 3:</strong> Database Help<br>
+          <a href="/chat.html?id=3">Open Conversation</a>
+        </p>
+      </div>
+
+      <br>
+
+      <!-- Navigation -->
+      <div class="nav-links">
+        <a class="button button-secondary" href="chat.html">Go to Chat</a>
+        <a class="button button-secondary" href="dashboard.html">Back to Dashboard</a>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

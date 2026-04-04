@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
+  <title>Sign Up</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="page">
     <div class="card">
-      <h1>Login</h1>
-      <p>Enter your username and password to access your dashboard.</p>
-      <form action="/api/auth/login" method="POST">
+      <h1>Create Account</h1>
+      <p>Create a new account to access the application dashboard.</p>
+      <form action="/api/auth/signup" method="POST">
         <div class="form-group">
           <label for="username">Username</label>
           <input id="username" type="text" name="username" required>
@@ -20,9 +20,9 @@
           <label for="password">Password</label>
           <input id="password" type="password" name="password" required>
         </div>
-        <button type="submit">Login</button>
-        <p id="loginMessage" class="message"></p>
-        <p class="link-text">Don't have an account? <a href="/signup">Sign Up</a></p>
+        <button type="submit">Sign Up</button>
+        <p id="signupMessage" class="message"></p>
+      <p class="link-text">Already have an account? <a href="login.html">Login</a></p>
       </form>
       <div class="link-row">
         <a href="/">Back to Home</a>

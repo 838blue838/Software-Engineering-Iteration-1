@@ -1,0 +1,49 @@
+<!DOCTYPE html> <!-- Iteration 2 Progress, Screen asking if you want to logout, and directs you to a logout page if successful-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logout</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Logout</h1>
+
+      <div class="dashboard-box">
+        Are you sure you want to log out of your account?
+      </div>
+
+      <!-- Logout Confirmation -->
+      <form id="logoutForm" action="/api/auth/logout" method="POST" style="margin-top: 15px;">
+        <button type="submit">Yes, Logout</button>
+      </form>
+
+      <script>
+        const form = document.getElementById("logoutForm");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault(); // stop normal form submission
+
+          await fetch("/api/auth/logout", {
+              method: "POST"
+          });
+
+          // redirect after logout
+          window.location.href = "logout-success.html";
+        });
+      </script>
+
+      <br>
+
+      <!-- Cancel / Navigation -->
+      <div class="nav-links">
+        <a class="button button-secondary" href="dashboard.html">Cancel</a>
+        <a class="button button-secondary" href="index.html">Go to Landing Page</a>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

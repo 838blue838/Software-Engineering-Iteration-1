@@ -1,19 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Create Account</h1>
-  <form action="/api/auth/signup" method="POST">
-    <label>Username:</label>
-    <input type="text" name="username" required />
-    <br />
-    <label>Password:</label>
-    <input type="password" name="password" required />
-    <br />
-    <button type="submit">Sign Up</button>
-  </form>
-  <a href="/">Back to Home</a>
+  <div class="page">
+    <div class="card">
+      <h1>Create Account</h1>
+      <p>Create a new account to access the application dashboard.</p>
+      <form action="/api/auth/signup" method="POST">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" type="text" name="username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" required>
+        </div>
+        <button type="submit">Sign Up</button>
+        <p id="signupMessage" class="message" style="color:red"></p>
+        <script>
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('error')) document.getElementById('signupMessage').textContent = params.get('error');
+        </script>
+        <p class="link-text">Already have an account? <a href="/login">Login</a></p>
+      </form>
+      <div class="link-row">
+        <a href="/">Back to Home</a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

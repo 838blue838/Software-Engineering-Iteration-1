@@ -1,0 +1,16 @@
+CREATE DATABASE llm_site;
+USE llm_site;
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255),
+  auth_provider VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE USER 'devuser'@'localhost' IDENTIFIED BY 'Password123';
+GRANT ALL PRIVILEGES ON llm_site.* TO 'devuser'@'localhost';
+FLUSH PRIVILEGES;
+SHOW TABLES;
+SELECT * FROM users;
+DELETE FROM users; 
+SELECT user, host FROM mysql.user;
