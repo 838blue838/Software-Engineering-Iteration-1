@@ -15,11 +15,13 @@
         Status: Authenticated user session is active.
       </div>
       <div class="nav-links">
-        <a class="button button-secondary" href="profile.html">View Profile</a>
-        <a class="button button-secondary" href="about.html">About This Project</a>
-        <a class="button button-secondary" href="chat.html">Start Chat</a> <!-- Iteration 2 Progression, Start chat button-->
-        <a class="button button-secondary" href="history.html">Conversation History</a> <!-- Iteration 2 Progression, History chat button-->
-        <a class="button button-secondary" href="logout.html">Logout</a> <!-- Iteration 2 Progression, Logout Button-->
+        <a class="button button-secondary" href="/profile">View Profile</a>
+        <a class="button button-secondary" href="/about">About This Project</a>
+        <a class="button button-secondary" href="/chat">Start Chat</a>
+        <a class="button button-secondary" href="/history">Conversation History</a>
+        <form action="/api/auth/logout" method="POST" style="display:inline;">
+          <button type="submit" class="button button-secondary">Logout</button>
+        </form>
       </div>
     </div>
   </div>

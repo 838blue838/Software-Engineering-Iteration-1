@@ -1,52 +1,115 @@
-<!DOCTYPE html> <!-- Iteration 2 Progression, Chat page dedicated for talking to the LLM-->
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .chat-window { height: 350px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+    .msg-user { text-align: right; margin: 6px 0; }
+    .msg-user span { background: #4a90d9; color: #fff; padding: 6px 12px; border-radius: 12px; display: inline-block; max-width: 75%; }
+    .msg-assistant { text-align: left; margin: 6px 0; }
+    .msg-assistant span { background: #e4e4e4; color: #222; padding: 6px 12px; border-radius: 12px; display: inline-block; max-width: 75%; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; padding: 8px; }
+  </style>
 </head>
 <body>
   <div class="page">
     <div class="card">
       <h1>LLM Chat</h1>
 
-      <div class="dashboard-box">
-        Start a new conversation or continue an existing one.
+      <div class="chat-window" id="chatWindow">
+        <p style="color:#999;">Loading messages...</p>
       </div>
 
-      <!-- Chat Window -->
-      <div class="chat-window" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
-        <p><strong>You:</strong> Hello</p>
-        <p><strong>LLM:</strong> Hi! How can I help you?</p>
-      </div>
-
-      <!-- Message Input -->
-      <form action="/api/chat" method="POST">
-        <input 
-          type="text" 
-          name="message" 
-          placeholder="Type your message..." 
-          style="width: 80%; padding: 8px;" 
-          required
-        >
-        <button type="submit">Send</button>
+      <form id="chatForm">
+        <input type="hidden" id="conversationId" name="conversationId" value="">
+        <div class="input-row">
+          <input type="text" id="messageInput" name="message" placeholder="Type your message..." required>
+          <button type="submit">Send</button>
+        </div>
       </form>
 
       <br>
-
-      <!-- Navigation -->
       <div class="nav-links">
-        <a class="button button-secondary" href="history.html">View History</a>
-        <a class="button button-secondary" href="dashboard.html">Back to Dashboard</a>
+        <a class="button button-secondary" href="/history">View History</a>
+        <a class="button button-secondary" href="/dashboard">Back to Dashboard</a>
       </div>
 
-      <!-- New Chat -->
-      <form action="/api/chat/new" method="POST" style="margin-top: 10px;">
-        <button type="submit">Start New Chat</button>
-      </form>
-
+      <div style="margin-top: 10px;">
+        <button type="button" onclick="startNewConversation()">Start New Chat</button>
+      </div>
     </div>
   </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const convoId = params.get("id");
+    const convoInput = document.getElementById("conversationId");
+    const chatWindow = document.getElementById("chatWindow");
+
+    function renderMessages(messages) {
+      if (messages.length === 0) {
+        chatWindow.innerHTML = "<p style='color:#999;'>No messages yet. Say something!</p>";
+        return;
+      }
+      chatWindow.innerHTML = messages.map(m =>
+        m.role === "user"
+          ? `<div class="msg-user"><span>${escapeHtml(m.content)}</span></div>`
+          : `<div class="msg-assistant"><span>${escapeHtml(m.content)}</span></div>`
+      ).join("");
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    async function loadConversation(id) {
+      convoInput.value = id;
+      const res = await fetch(`/api/chat/conversation/${id}`);
+      const messages = await res.json();
+      renderMessages(messages);
+    }
+
+    async function startNewConversation() {
+      const res = await fetch("/api/chat/new", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        chatWindow.innerHTML = `<p style='color:red;'>Error: ${escapeHtml(err.error)}</p>`;
+        return;
+      }
+      const data = await res.json();
+      window.location.href = `/chat?id=${data.id}`;
+    }
+
+    async function init() {
+      if (convoId) {
+        await loadConversation(convoId);
+      } else {
+        await startNewConversation();
+      }
+    }
+
+    document.getElementById("chatForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = document.getElementById("messageInput").value.trim();
+      if (!message) return;
+
+      document.getElementById("messageInput").value = "";
+      chatWindow.innerHTML += `<div class="msg-user"><span>${escapeHtml(message)}</span></div>`;
+      chatWindow.innerHTML += `<div class="msg-assistant"><span><em>Thinking...</em></span></div>`;
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      const formData = new URLSearchParams({ message, conversationId: convoInput.value });
+      await fetch("/api/chat/message", { method: "POST", body: formData, headers: { "Content-Type": "application/x-www-form-urlencoded" }, redirect: "follow" });
+
+      await loadConversation(convoInput.value);
+    });
+
+    init();
+  </script>
 </body>
 </html>
