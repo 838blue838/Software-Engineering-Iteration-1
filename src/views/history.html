@@ -1,4 +1,4 @@
-<!DOCTYPE html> <!-- Iteration 2 Progression, History page dedicated to looking at the history of conversations-->
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,57 +7,91 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page">
-    <div class="card">
-      <h1>Conversation History</h1>
-
-      <div class="dashboard-box">
-        View and search your previous conversations.
+  <div class="page page-top">
+    <div class="card card-history">
+      <div class="history-header">
+        <div>
+          <div class="history-label">Archive</div>
+          <h1>Conversation History</h1>
+          <p>View, search, and reopen your previous conversations.</p>
+        </div>
+        <div class="history-header-actions">
+          <a class="button button-secondary history-top-button" href="/chat">Go to Chat</a>
+          <a class="button button-secondary history-top-button" href="/dashboard">Dashboard</a>
+        </div>
       </div>
 
-      <!-- Search Bar -->
-      <form action="/api/conversations/search" method="GET" style="margin-bottom: 15px;">
-        <input 
-          type="text" 
-          name="q" 
-          placeholder="Search conversations..." 
-          style="width: 80%; padding: 8px;" 
-          required
-        >
-        <button type="submit">Search</button>
+      <form class="history-search" onsubmit="return false;">
+        <input type="text" id="historySearch" placeholder="Search conversations...">
+        <button type="button" onclick="filterHistory()">Search</button>
       </form>
 
-      <!-- Conversation List -->
-      <div class="history-list" style="border: 1px solid #ccc; padding: 10px;">
-        <p>
-          <strong>Chat 1:</strong> Binary Trees Help<br>
-          <a href="/chat.html?id=1">Open Conversation</a>
-        </p>
+      <div class="history-grid" id="historyGrid">
+        <a class="history-card" href="/chat?id=1" data-title="Binary Trees Help" data-desc="Traversal order, recursion, and tree examples.">
+          <div class="history-card-top">
+            <h2>Binary Trees Help</h2>
+            <span class="history-time">Today</span>
+          </div>
+          <p>Traversal order, recursion, and tree examples.</p>
+        </a>
 
-        <hr>
+        <a class="history-card" href="/chat?id=2" data-title="API Design Questions" data-desc="REST routes, handlers, and authentication structure.">
+          <div class="history-card-top">
+            <h2>API Design Questions</h2>
+            <span class="history-time">Yesterday</span>
+          </div>
+          <p>REST routes, handlers, and authentication structure.</p>
+        </a>
 
-        <p>
-          <strong>Chat 2:</strong> API Design Questions<br>
-          <a href="/chat.html?id=2">Open Conversation</a>
-        </p>
+        <a class="history-card" href="/chat?id=3" data-title="Database Help" data-desc="Users table design, auth provider field, and MySQL setup.">
+          <div class="history-card-top">
+            <h2>Database Help</h2>
+            <span class="history-time">2 days ago</span>
+          </div>
+          <p>Users table design, auth provider field, and MySQL setup.</p>
+        </a>
 
-        <hr>
+        <a class="history-card" href="/chat?id=4" data-title="Signals Homework" data-desc="Convolution practice and system response review.">
+          <div class="history-card-top">
+            <h2>Signals Homework</h2>
+            <span class="history-time">3 days ago</span>
+          </div>
+          <p>Convolution practice and system response review.</p>
+        </a>
 
-        <p>
-          <strong>Chat 3:</strong> Database Help<br>
-          <a href="/chat.html?id=3">Open Conversation</a>
-        </p>
+        <a class="history-card" href="/chat?id=5" data-title="Rutgers CAS Flow" data-desc="Login redirect, callback planning, and service authorization notes.">
+          <div class="history-card-top">
+            <h2>Rutgers CAS Flow</h2>
+            <span class="history-time">Last week</span>
+          </div>
+          <p>Login redirect, callback planning, and service authorization notes.</p>
+        </a>
+
+        <a class="history-card" href="/chat?id=6" data-title="Iteration 2 UI Ideas" data-desc="Sidebar history, better dashboard, and cleaner chat layout.">
+          <div class="history-card-top">
+            <h2>Iteration 2 UI Ideas</h2>
+            <span class="history-time">Last week</span>
+          </div>
+          <p>Sidebar history, better dashboard, and cleaner chat layout.</p>
+        </a>
       </div>
-
-      <br>
-
-      <!-- Navigation -->
-      <div class="nav-links">
-        <a class="button button-secondary" href="chat.html">Go to Chat</a>
-        <a class="button button-secondary" href="dashboard.html">Back to Dashboard</a>
-      </div>
-
     </div>
   </div>
+
+  <script>
+    function filterHistory() {
+      const term = document.getElementById("historySearch").value.toLowerCase();
+      const cards = document.querySelectorAll(".history-card");
+
+      cards.forEach((card) => {
+        const title = card.dataset.title.toLowerCase();
+        const desc = card.dataset.desc.toLowerCase();
+        const match = title.includes(term) || desc.includes(term);
+        card.style.display = match ? "block" : "none";
+      });
+    }
+
+    document.getElementById("historySearch").addEventListener("input", filterHistory);
+  </script>
 </body>
 </html>

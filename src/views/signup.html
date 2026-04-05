@@ -9,29 +9,52 @@
 <body>
   <div class="page">
     <div class="card">
-      <h1>Create Account</h1>
+      <div class="auth-badge">Create Account</div>
+      <h1>Sign Up</h1>
       <p>Create a new account to access the application dashboard.</p>
+
       <form action="/api/auth/signup" method="POST">
         <div class="form-group">
           <label for="username">Username</label>
           <input id="username" type="text" name="username" required>
         </div>
+
         <div class="form-group">
           <label for="password">Password</label>
-          <input id="password" type="password" name="password" required>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            minlength="3"
+            pattern="^(?=.*[A-Z])(?=.*\d).{3,}$"
+            title="Password must be at least 3 characters long and include 1 capital letter and 1 number."
+            required
+          >
         </div>
+
+        <div class="password-hint">
+          Password must be at least 3 characters long and include at least 1 capital letter and 1 number.
+        </div>
+
         <button type="submit">Sign Up</button>
-        <p id="signupMessage" class="message" style="color:red"></p>
-        <script>
-          const params = new URLSearchParams(window.location.search);
-          if (params.get('error')) document.getElementById('signupMessage').textContent = params.get('error');
-        </script>
+
+        <p id="signupMessage" class="message message-error"></p>
+
         <p class="link-text">Already have an account? <a href="/login">Login</a></p>
       </form>
+
       <div class="link-row">
         <a href="/">Back to Home</a>
       </div>
     </div>
   </div>
+
+  <script>
+    const signupParams = new URLSearchParams(window.location.search);
+    const signupError = signupParams.get("error");
+    if (signupError) {
+      document.getElementById("signupMessage").textContent = signupError;
+    }
+  </script>
 </body>
 </html>

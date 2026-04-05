@@ -8,18 +8,30 @@
 </head>
 <body>
   <div class="page">
-    <div class="card">
+    <div class="card card-wide dashboard-card">
+      <div class="hero-badge">Workspace</div>
       <h1>Dashboard</h1>
-      <p>You are successfully logged in.</p>
-      <div class="dashboard-box">
-        Status: Authenticated user session is active.
+      <p class="hero-text">
+        You are successfully logged in. Start a new conversation, continue an old one,
+        or review your previous chat history.
+      </p>
+
+      <div class="dashboard-grid">
+        <div class="dashboard-panel dashboard-panel-primary">
+          <h2>Open Chat</h2>
+          <p>Go directly into the main chat interface and continue working.</p>
+          <a class="button" href="/chat">Go to Chat</a>
+        </div>
+
+        <div class="dashboard-panel">
+          <h2>Conversation History</h2>
+          <p>Browse older chats, search past conversations, and reopen threads.</p>
+          <a class="button button-secondary" href="/history">View History</a>
+        </div>
       </div>
-      <div class="nav-links">
-        <a class="button button-secondary" href="profile.html">View Profile</a>
-        <a class="button button-secondary" href="about.html">About This Project</a>
-        <a class="button button-secondary" href="chat.html">Start Chat</a> <!-- Iteration 2 Progression, Start chat button-->
-        <a class="button button-secondary" href="history.html">Conversation History</a> <!-- Iteration 2 Progression, History chat button-->
-        <a class="button button-secondary" href="logout.html">Logout</a> <!-- Iteration 2 Progression, Logout Button-->
+
+      <div class="dashboard-footer-actions">
+        <a class="button button-secondary" href="logout.html">Logout</a>
       </div>
     </div>
   </div>

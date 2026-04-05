@@ -5,6 +5,17 @@ function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
+function isValidPassword(password) {
+  if (!password || password.length < 3) {
+    return false;
+  }
+
+  const hasCapital = /[A-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+
+  return hasCapital && hasNumber;
+}
+
 async function createUser(username, password) {
   if (!username || !password) {
     throw new Error("Username and password are required.");
@@ -16,7 +27,13 @@ async function createUser(username, password) {
     throw new Error("User already exists.");
   }
 
-  return await usersData.createUser(username, hashPassword(password), "local");
+  const isCasPlaceholder = password === "CAS_AUTH_ONLY";
+
+  if (!isCasPlaceholder && !isValidPassword(password)) {
+    throw new Error("Password must be at least 3 characters long and include 1 capital letter and 1 number.");
+  }
+
+  return await usersData.createUser(username, hashPassword(password), isCasPlaceholder ? "cas" : "local");
 }
 
 async function validateUser(username, password) {
@@ -47,45 +64,3 @@ module.exports = {
   findUserByUsername,
   clearUsers
 };
-
-
-// const users = require("../data/users");
-
-// function findUserByUsername(username) {
-//   return users.find((user) => user.username === username) || null;
-// }
-
-// function createUser(username, password) {
-//   if (!username || !password) {
-//     throw new Error("Username and password are required.");
-//   }
-
-//   const existingUser = findUserByUsername(username);
-//   if (existingUser) {
-//     throw new Error("User already exists.");
-//   }
-
-//   const newUser = { id: users.length + 1, username, password };
-//   users.push(newUser);
-//   return newUser;
-// }
-
-// function validateUser(username, password) {
-//   const user = findUserByUsername(username);
-//   if (!user) {
-//     return null;
-//   }
-
-//   return user.password === password ? user : null;
-// }
-
-// function clearUsers() {
-//   users.length = 0;
-// }
-
-// module.exports = {
-//   findUserByUsername,
-//   createUser,
-//   validateUser,
-//   clearUsers
-// };
