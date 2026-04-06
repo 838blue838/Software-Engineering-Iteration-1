@@ -9,25 +9,40 @@
 <body>
   <div class="page">
     <div class="card">
+      <div class="auth-badge">Welcome Back</div>
       <h1>Login</h1>
       <p>Enter your username and password to access your dashboard.</p>
+
       <form action="/api/auth/login" method="POST">
         <div class="form-group">
           <label for="username">Username</label>
           <input id="username" type="text" name="username" required>
         </div>
+
         <div class="form-group">
           <label for="password">Password</label>
           <input id="password" type="password" name="password" required>
         </div>
+
         <button type="submit">Login</button>
-        <p id="loginMessage" class="message"></p>
+
+        <p id="loginMessage" class="message message-error"></p>
+
         <p class="link-text">Don't have an account? <a href="/signup">Sign Up</a></p>
       </form>
+
       <div class="link-row">
         <a href="/">Back to Home</a>
       </div>
     </div>
   </div>
+
+  <script>
+    const loginParams = new URLSearchParams(window.location.search);
+    const loginError = loginParams.get("error");
+    if (loginError) {
+      document.getElementById("loginMessage").textContent = loginError;
+    }
+  </script>
 </body>
 </html>

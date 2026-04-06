@@ -5,6 +5,17 @@ function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
+function isValidPassword(password) {
+  if (!password || password.length < 3) {
+    return false;
+  }
+
+  const hasCapital = /[A-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+
+  return hasCapital && hasNumber;
+}
+
 async function createUser(username, password) {
   if (!username || !password) {
     throw new Error("Username and password are required.");
@@ -16,7 +27,13 @@ async function createUser(username, password) {
     throw new Error("User already exists.");
   }
 
-  return await usersData.createUser(username, hashPassword(password), "local");
+  const isCasPlaceholder = password === "CAS_AUTH_ONLY";
+
+  if (!isCasPlaceholder && !isValidPassword(password)) {
+    throw new Error("Password must be at least 3 characters long and include 1 capital letter and 1 number.");
+  }
+
+  return await usersData.createUser(username, hashPassword(password), isCasPlaceholder ? "cas" : "local");
 }
 
 async function validateUser(username, password) {
