@@ -1,0 +1,47 @@
+# Change Log — Iteration 2
+
+## Feature: LLM Chat Integration (Ollama)
+- Developer: Dev Team
+- Branch: devteamiteration2
+- PR: pending
+- Files changed:
+  - src/services/llmService.js (new) — Ollama HTTP API client using native fetch
+  - src/controllers/chatController.js (new) — newConversation, sendMessage, getHistory, getConversation, searchConversations handlers
+  - src/routes/chatRoutes.js (new) — POST /new, POST /message, GET /history, GET /conversation/:id, GET /search
+  - src/app.js — registered chatRoutes under /api/chat
+  - .env — added OLLAMA_HOST and OLLAMA_MODEL
+
+## Feature: Conversation History (Save & View)
+- Developer: Dev Team
+- Branch: devteamiteration2
+- PR: pending
+- Files changed:
+  - src/services/chatService.js (new) — createConversation, getConversationsByUser, saveMessage, getMessages, searchMessages, clearConversations
+  - src/views/history.html (new) — dynamic conversation history page with search
+  - src/routes/pageRoutes.js — added GET /history route with requireAuth
+
+## Feature: Chat Page (Continue Conversations)
+- Developer: Dev Team
+- Branch: devteamiteration2
+- PR: pending
+- Files changed:
+  - src/views/chat.html (new) — dynamic chat UI, loads existing conversations via ?id=, sends messages via AJAX
+  - src/routes/pageRoutes.js — added GET /chat route with requireAuth
+
+## Feature: Dashboard Navigation Updates
+- Developer: Dev Team
+- Branch: devteamiteration2
+- PR: pending
+- Files changed:
+  - src/views/dashboard.html — added Start Chat, Conversation History, and Logout buttons
+
+## Feature: Unit Tests (TDD)
+- Developer: Dev Team
+- Branch: devteamiteration2
+- PR: pending
+- Files changed:
+  - spec/chatService.spec.js (new) — 11 Jasmine unit tests for chatService (written before implementation)
+
+## Database Schema Changes
+- conversations table added (user_id FK → users.id CASCADE)
+- messages table added (conversation_id FK → conversations.id CASCADE)

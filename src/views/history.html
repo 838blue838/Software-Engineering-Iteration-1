@@ -5,93 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversation History</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .history-item { border-bottom: 1px solid #ddd; padding: 10px 0; }
+    .history-item:last-child { border-bottom: none; }
+    .search-result { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 0.9em; }
+    .input-row { display: flex; gap: 8px; margin-bottom: 15px; }
+    .input-row input { flex: 1; padding: 8px; }
+  </style>
 </head>
 <body>
-  <div class="page page-top">
-    <div class="card card-history">
-      <div class="history-header">
-        <div>
-          <div class="history-label">Archive</div>
-          <h1>Conversation History</h1>
-          <p>View, search, and reopen your previous conversations.</p>
-        </div>
-        <div class="history-header-actions">
-          <a class="button button-secondary history-top-button" href="/chat">Go to Chat</a>
-          <a class="button button-secondary history-top-button" href="/dashboard">Dashboard</a>
-        </div>
+  <div class="page">
+    <div class="card">
+      <h1>Conversation History</h1>
+
+      <div class="input-row">
+        <input type="text" id="searchInput" placeholder="Search conversations...">
+        <button id="searchBtn">Search</button>
+        <button id="clearBtn">Clear</button>
       </div>
 
-      <form class="history-search" onsubmit="return false;">
-        <input type="text" id="historySearch" placeholder="Search conversations...">
-        <button type="button" onclick="filterHistory()">Search</button>
-      </form>
+      <div id="searchResults" style="display:none; margin-bottom:15px;">
+        <h3>Search Results</h3>
+        <div id="searchList"></div>
+      </div>
 
-      <div class="history-grid" id="historyGrid">
-        <a class="history-card" href="/chat?id=1" data-title="Binary Trees Help" data-desc="Traversal order, recursion, and tree examples.">
-          <div class="history-card-top">
-            <h2>Binary Trees Help</h2>
-            <span class="history-time">Today</span>
-          </div>
-          <p>Traversal order, recursion, and tree examples.</p>
-        </a>
+      <div id="historyList">
+        <p style="color:#999;">Loading conversations...</p>
+      </div>
 
-        <a class="history-card" href="/chat?id=2" data-title="API Design Questions" data-desc="REST routes, handlers, and authentication structure.">
-          <div class="history-card-top">
-            <h2>API Design Questions</h2>
-            <span class="history-time">Yesterday</span>
-          </div>
-          <p>REST routes, handlers, and authentication structure.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=3" data-title="Database Help" data-desc="Users table design, auth provider field, and MySQL setup.">
-          <div class="history-card-top">
-            <h2>Database Help</h2>
-            <span class="history-time">2 days ago</span>
-          </div>
-          <p>Users table design, auth provider field, and MySQL setup.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=4" data-title="Signals Homework" data-desc="Convolution practice and system response review.">
-          <div class="history-card-top">
-            <h2>Signals Homework</h2>
-            <span class="history-time">3 days ago</span>
-          </div>
-          <p>Convolution practice and system response review.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=5" data-title="Rutgers CAS Flow" data-desc="Login redirect, callback planning, and service authorization notes.">
-          <div class="history-card-top">
-            <h2>Rutgers CAS Flow</h2>
-            <span class="history-time">Last week</span>
-          </div>
-          <p>Login redirect, callback planning, and service authorization notes.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=6" data-title="Iteration 2 UI Ideas" data-desc="Sidebar history, better dashboard, and cleaner chat layout.">
-          <div class="history-card-top">
-            <h2>Iteration 2 UI Ideas</h2>
-            <span class="history-time">Last week</span>
-          </div>
-          <p>Sidebar history, better dashboard, and cleaner chat layout.</p>
-        </a>
+      <br>
+      <div class="nav-links">
+        <a class="button button-secondary" href="/chat">Go to Chat</a>
+        <a class="button button-secondary" href="/dashboard">Back to Dashboard</a>
       </div>
     </div>
   </div>
 
   <script>
-    function filterHistory() {
-      const term = document.getElementById("historySearch").value.toLowerCase();
-      const cards = document.querySelectorAll(".history-card");
-
-      cards.forEach((card) => {
-        const title = card.dataset.title.toLowerCase();
-        const desc = card.dataset.desc.toLowerCase();
-        const match = title.includes(term) || desc.includes(term);
-        card.style.display = match ? "block" : "none";
-      });
+    function escapeHtml(str) {
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
 
-    document.getElementById("historySearch").addEventListener("input", filterHistory);
+    async function loadHistory() {
+      const res = await fetch("/api/chat/history");
+      const convos = await res.json();
+      const list = document.getElementById("historyList");
+
+      if (!convos.length) {
+        list.innerHTML = "<p style='color:#999;'>No conversations yet.</p>";
+        return;
+      }
+
+      list.innerHTML = convos.map(c => `
+        <div class="history-item">
+          <strong>${escapeHtml(c.title)}</strong><br>
+          <small>${new Date(c.updated_at).toLocaleString()}</small><br>
+          <a href="/chat?id=${c.id}">Open Conversation</a>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+      const q = document.getElementById("searchInput").value.trim();
+      if (!q) return;
+
+      const res = await fetch(`/api/chat/search?q=${encodeURIComponent(q)}`);
+      const results = await res.json();
+      const searchResults = document.getElementById("searchResults");
+      const searchList = document.getElementById("searchList");
+
+      searchResults.style.display = "block";
+
+      if (!results.length) {
+        searchList.innerHTML = "<p style='color:#999;'>No results found.</p>";
+        return;
+      }
+
+      searchList.innerHTML = results.map(m => `
+        <div class="search-result">
+          <strong>${escapeHtml(m.conversation_title)}</strong> — <em>${m.role}</em><br>
+          ${escapeHtml(m.content)}<br>
+          <a href="/chat?id=${m.conversation_id}">Open Conversation</a>
+        </div>
+      `).join("");
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("searchResults").style.display = "none";
+    });
+
+    loadHistory();
   </script>
 </body>
 </html>

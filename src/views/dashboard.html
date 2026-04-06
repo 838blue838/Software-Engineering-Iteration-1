@@ -29,9 +29,14 @@
           <a class="button button-secondary" href="/history">View History</a>
         </div>
       </div>
-
-      <div class="dashboard-footer-actions">
-        <a class="button button-secondary" href="logout.html">Logout</a>
+      <div class="nav-links">
+        <a class="button button-secondary" href="/profile">View Profile</a>
+        <a class="button button-secondary" href="/about">About This Project</a>
+        <a class="button button-secondary" href="/chat">Start Chat</a>
+        <a class="button button-secondary" href="/history">Conversation History</a>
+        <form action="/api/auth/logout" method="POST" style="display:inline;">
+          <button type="submit" class="button button-secondary">Logout</button>
+        </form>
       </div>
     </div>
   </div>

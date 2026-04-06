@@ -5,173 +5,111 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM Chat</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .chat-window { height: 350px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+    .msg-user { text-align: right; margin: 6px 0; }
+    .msg-user span { background: #4a90d9; color: #fff; padding: 6px 12px; border-radius: 12px; display: inline-block; max-width: 75%; }
+    .msg-assistant { text-align: left; margin: 6px 0; }
+    .msg-assistant span { background: #e4e4e4; color: #222; padding: 6px 12px; border-radius: 12px; display: inline-block; max-width: 75%; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; padding: 8px; }
+  </style>
 </head>
 <body>
-  <div class="chat-page">
-    <div class="chat-shell">
-      <aside class="chat-sidebar">
-        <div class="sidebar-header">
-          <div>
-            <div class="sidebar-label">Workspace</div>
-            <h2>Conversations</h2>
-          </div>
-          <form action="/api/chat/new" method="POST">
-            <button type="submit" class="sidebar-new-chat">+ New Chat</button>
-          </form>
+  <div class="page">
+    <div class="card">
+      <h1>LLM Chat</h1>
+
+      <div class="chat-window" id="chatWindow">
+        <p style="color:#999;">Loading messages...</p>
+      </div>
+
+      <form id="chatForm">
+        <input type="hidden" id="conversationId" name="conversationId" value="">
+        <div class="input-row">
+          <input type="text" id="messageInput" name="message" placeholder="Type your message..." required>
+          <button type="submit">Send</button>
         </div>
+      </form>
 
-        <form class="sidebar-search" onsubmit="return false;">
-          <input type="text" id="sidebarSearch" placeholder="Search chats...">
-        </form>
+      <br>
+      <div class="nav-links">
+        <a class="button button-secondary" href="/history">View History</a>
+        <a class="button button-secondary" href="/dashboard">Back to Dashboard</a>
+      </div>
 
-        <div class="conversation-list" id="conversationList"></div>
-
-        <div class="sidebar-footer">
-          <a class="button button-secondary" href="/history">Full History</a>
-          <a class="button button-secondary" href="/dashboard">Dashboard</a>
-        </div>
-      </aside>
-
-      <main class="chat-main">
-        <div class="chat-topbar">
-          <div>
-            <div class="chat-topbar-label">Active Conversation</div>
-            <h1 id="chatTitle">Conversation</h1>
-          </div>
-          <div class="chat-topbar-actions">
-            <a class="button button-secondary topbar-button" href="/history">History</a>
-          </div>
-        </div>
-
-        <div class="chat-status-banner" id="chatStatusBanner">
-          Continue an existing conversation or start a new one from the sidebar.
-        </div>
-
-        <div class="chat-window-modern" id="chatWindow"></div>
-
-        <div class="chat-composer">
-          <form class="chat-form" action="/api/chat" method="POST">
-            <input type="text" name="message" placeholder="Type your message here..." required>
-            <button type="submit">Send</button>
-          </form>
-        </div>
-      </main>
+      <div style="margin-top: 10px;">
+        <button type="button" onclick="startNewConversation()">Start New Chat</button>
+      </div>
     </div>
   </div>
 
   <script>
-    const conversations = {
-      1: {
-        title: "Binary Trees Help",
-        preview: "Last message: traversal explanation",
-        messages: [
-          { role: "You", type: "user", text: "Hello, can you help me with binary trees?" },
-          { role: "LLM", type: "bot", text: "Of course. What part of binary trees are you working on right now?" },
-          { role: "You", type: "user", text: "I need help understanding preorder, inorder, and postorder traversals." },
-          { role: "LLM", type: "bot", text: "A good way to remember them is by where the root is visited. Preorder visits root first, inorder visits root in the middle, and postorder visits root last." }
-        ]
-      },
-      2: {
-        title: "API Design Questions",
-        preview: "Last message: endpoint structure",
-        messages: [
-          { role: "You", type: "user", text: "Can you explain the difference between page routes and API routes?" },
-          { role: "LLM", type: "bot", text: "Page routes render views for the user, while API routes handle backend actions such as login, logout, and data processing." }
-        ]
-      },
-      3: {
-        title: "Database Help",
-        preview: "Last message: MySQL schema review",
-        messages: [
-          { role: "You", type: "user", text: "What fields should go in the users table?" },
-          { role: "LLM", type: "bot", text: "A strong start is id, username, password, auth_provider, and created_at." }
-        ]
-      },
-      4: {
-        title: "Signals Homework",
-        preview: "Last message: convolution steps",
-        messages: [
-          { role: "You", type: "user", text: "How do I start this convolution problem?" },
-          { role: "LLM", type: "bot", text: "Start by identifying the overlap region and then compute the integral piece by piece." }
-        ]
-      },
-      5: {
-        title: "Rutgers CAS Flow",
-        preview: "Last message: callback planning",
-        messages: [
-          { role: "You", type: "user", text: "Why is Rutgers CAS rejecting our app?" },
-          { role: "LLM", type: "bot", text: "The app needs to be authorized and registered with Rutgers CAS before end-to-end login will work." }
-        ]
-      },
-      6: {
-        title: "Iteration 2 UI Ideas",
-        preview: "Last message: sidebar history",
-        messages: [
-          { role: "You", type: "user", text: "Would moving history into a sidebar improve the flow?" },
-          { role: "LLM", type: "bot", text: "Yes, it would make the chat page feel more integrated and reduce unnecessary page switching." }
-        ]
+    const params = new URLSearchParams(window.location.search);
+    const convoId = params.get("id");
+    const convoInput = document.getElementById("conversationId");
+    const chatWindow = document.getElementById("chatWindow");
+
+    function renderMessages(messages) {
+      if (messages.length === 0) {
+        chatWindow.innerHTML = "<p style='color:#999;'>No messages yet. Say something!</p>";
+        return;
       }
-    };
-
-    function getConversationId() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      return conversations[id] ? id : "1";
+      chatWindow.innerHTML = messages.map(m =>
+        m.role === "user"
+          ? `<div class="msg-user"><span>${escapeHtml(m.content)}</span></div>`
+          : `<div class="msg-assistant"><span>${escapeHtml(m.content)}</span></div>`
+      ).join("");
+      chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    function renderSidebar(activeId) {
-      const list = document.getElementById("conversationList");
-      list.innerHTML = "";
-
-      Object.entries(conversations).forEach(([id, convo]) => {
-        const link = document.createElement("a");
-        link.href = `/chat?id=${id}`;
-        link.className = `conversation-item ${id === activeId ? "active" : ""}`;
-        link.innerHTML = `
-          <div class="conversation-title">${convo.title}</div>
-          <div class="conversation-preview">${convo.preview}</div>
-        `;
-        list.appendChild(link);
-      });
+    function escapeHtml(str) {
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
 
-    function renderChat(id) {
-      const convo = conversations[id];
-      document.getElementById("chatTitle").textContent = convo.title;
-
-      const chatWindow = document.getElementById("chatWindow");
-      chatWindow.innerHTML = "";
-
-      convo.messages.forEach((msg) => {
-        const row = document.createElement("div");
-        row.className = `message-row ${msg.type === "user" ? "message-row-user" : "message-row-bot"}`;
-
-        row.innerHTML = `
-          <div class="message-bubble ${msg.type === "user" ? "message-bubble-user" : "message-bubble-bot"}">
-            <span class="message-role">${msg.role}</span>
-            <p>${msg.text}</p>
-          </div>
-        `;
-
-        chatWindow.appendChild(row);
-      });
+    async function loadConversation(id) {
+      convoInput.value = id;
+      const res = await fetch(`/api/chat/conversation/${id}`);
+      const messages = await res.json();
+      renderMessages(messages);
     }
 
-    function setupSidebarSearch() {
-      const input = document.getElementById("sidebarSearch");
-      input.addEventListener("input", () => {
-        const term = input.value.toLowerCase();
-        document.querySelectorAll(".conversation-item").forEach((item) => {
-          const text = item.textContent.toLowerCase();
-          item.style.display = text.includes(term) ? "block" : "none";
-        });
-      });
+    async function startNewConversation() {
+      const res = await fetch("/api/chat/new", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        chatWindow.innerHTML = `<p style='color:red;'>Error: ${escapeHtml(err.error)}</p>`;
+        return;
+      }
+      const data = await res.json();
+      window.location.href = `/chat?id=${data.id}`;
     }
 
-    const activeId = getConversationId();
-    renderSidebar(activeId);
-    renderChat(activeId);
-    setupSidebarSearch();
+    async function init() {
+      if (convoId) {
+        await loadConversation(convoId);
+      } else {
+        await startNewConversation();
+      }
+    }
+
+    document.getElementById("chatForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = document.getElementById("messageInput").value.trim();
+      if (!message) return;
+
+      document.getElementById("messageInput").value = "";
+      chatWindow.innerHTML += `<div class="msg-user"><span>${escapeHtml(message)}</span></div>`;
+      chatWindow.innerHTML += `<div class="msg-assistant"><span><em>Thinking...</em></span></div>`;
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      const formData = new URLSearchParams({ message, conversationId: convoInput.value });
+      await fetch("/api/chat/message", { method: "POST", body: formData, headers: { "Content-Type": "application/x-www-form-urlencoded" }, redirect: "follow" });
+
+      await loadConversation(convoInput.value);
+    });
+
+    init();
   </script>
 </body>
 </html>

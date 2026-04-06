@@ -35,7 +35,3 @@ module.exports = {
   findUserByUsername,
   clearUsers
 };
-
-// const users = [];
-
-//module.exports = users;
