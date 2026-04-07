@@ -104,8 +104,9 @@ describe("authController", () => {
 
     await authController.login(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.send).toHaveBeenCalledWith("Invalid username or password.");
+    expect(res.redirect).toHaveBeenCalledWith(
+      jasmine.stringContaining("/login?error=")
+    );
   });
 
   it("login does not set session on failed login", async () => {

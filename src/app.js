@@ -6,6 +6,7 @@ const session = require("express-session");
 
 const pageRoutes = require("./routes/pageRoutes");
 const authRoutes = require("./routes/authRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -27,5 +28,6 @@ app.use(express.static(path.join(__dirname, "views")));
 
 app.use("/", pageRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;

@@ -23,75 +23,97 @@
 
       <form class="history-search" onsubmit="return false;">
         <input type="text" id="historySearch" placeholder="Search conversations...">
-        <button type="button" onclick="filterHistory()">Search</button>
+        <button type="button" id="searchBtn">Search</button>
       </form>
 
       <div class="history-grid" id="historyGrid">
-        <a class="history-card" href="/chat?id=1" data-title="Binary Trees Help" data-desc="Traversal order, recursion, and tree examples.">
-          <div class="history-card-top">
-            <h2>Binary Trees Help</h2>
-            <span class="history-time">Today</span>
-          </div>
-          <p>Traversal order, recursion, and tree examples.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=2" data-title="API Design Questions" data-desc="REST routes, handlers, and authentication structure.">
-          <div class="history-card-top">
-            <h2>API Design Questions</h2>
-            <span class="history-time">Yesterday</span>
-          </div>
-          <p>REST routes, handlers, and authentication structure.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=3" data-title="Database Help" data-desc="Users table design, auth provider field, and MySQL setup.">
-          <div class="history-card-top">
-            <h2>Database Help</h2>
-            <span class="history-time">2 days ago</span>
-          </div>
-          <p>Users table design, auth provider field, and MySQL setup.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=4" data-title="Signals Homework" data-desc="Convolution practice and system response review.">
-          <div class="history-card-top">
-            <h2>Signals Homework</h2>
-            <span class="history-time">3 days ago</span>
-          </div>
-          <p>Convolution practice and system response review.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=5" data-title="Rutgers CAS Flow" data-desc="Login redirect, callback planning, and service authorization notes.">
-          <div class="history-card-top">
-            <h2>Rutgers CAS Flow</h2>
-            <span class="history-time">Last week</span>
-          </div>
-          <p>Login redirect, callback planning, and service authorization notes.</p>
-        </a>
-
-        <a class="history-card" href="/chat?id=6" data-title="Iteration 2 UI Ideas" data-desc="Sidebar history, better dashboard, and cleaner chat layout.">
-          <div class="history-card-top">
-            <h2>Iteration 2 UI Ideas</h2>
-            <span class="history-time">Last week</span>
-          </div>
-          <p>Sidebar history, better dashboard, and cleaner chat layout.</p>
-        </a>
+        <p style="color:var(--muted);">Loading your conversations...</p>
       </div>
     </div>
   </div>
 
   <script>
-    function filterHistory() {
-      const term = document.getElementById("historySearch").value.toLowerCase();
-      const cards = document.querySelectorAll(".history-card");
+    let searchTimeout = null;
 
-      cards.forEach((card) => {
-        const title = card.dataset.title.toLowerCase();
-        const desc = card.dataset.desc.toLowerCase();
-        const match = title.includes(term) || desc.includes(term);
-        card.style.display = match ? "block" : "none";
-      });
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    document.getElementById("historySearch").addEventListener("input", filterHistory);
+    function formatDate(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      const now = new Date();
+      const diff = Math.floor((now - d) / 86400000);
+      if (diff === 0) return "Today";
+      if (diff === 1) return "Yesterday";
+      if (diff < 7) return `${diff} days ago`;
+      if (diff < 14) return "Last week";
+      return d.toLocaleDateString();
+    }
+
+    function renderGrid(conversations) {
+      const grid = document.getElementById("historyGrid");
+
+      if (conversations.length === 0) {
+        grid.innerHTML = '<p style="color:var(--muted);">No conversations found.</p>';
+        return;
+      }
+
+      grid.innerHTML = conversations.map((c) => `
+        <a class="history-card" href="/chat?id=${c.id}">
+          <div class="history-card-top">
+            <h2>${escapeHtml(c.title)}</h2>
+            <span class="history-time">${formatDate(c.updated_at)}</span>
+          </div>
+          <p>Started ${formatDate(c.created_at)}</p>
+        </a>
+      `).join("");
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/chat/conversations");
+        const conversations = await res.json();
+        renderGrid(conversations);
+      } catch (err) {
+        document.getElementById("historyGrid").innerHTML =
+          '<p style="color:var(--danger);">Failed to load conversations.</p>';
+      }
+    }
+
+    async function searchHistory(term) {
+      try {
+        const res = await fetch(`/api/chat/search?q=${encodeURIComponent(term)}`);
+        const conversations = await res.json();
+        renderGrid(conversations);
+      } catch (err) {
+        document.getElementById("historyGrid").innerHTML =
+          '<p style="color:var(--danger);">Search failed. Please try again.</p>';
+      }
+    }
+
+    document.getElementById("historySearch").addEventListener("input", (e) => {
+      const term = e.target.value.trim();
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        if (term.length === 0) {
+          loadHistory();
+        } else {
+          searchHistory(term);
+        }
+      }, 300);
+    });
+
+    document.getElementById("searchBtn").addEventListener("click", () => {
+      const term = document.getElementById("historySearch").value.trim();
+      if (term.length === 0) {
+        loadHistory();
+      } else {
+        searchHistory(term);
+      }
+    });
+
+    loadHistory();
   </script>
 </body>
 </html>
