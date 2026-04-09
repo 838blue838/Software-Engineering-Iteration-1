@@ -1,4 +1,4 @@
-# LLM Web UI — Iteration 1
+# LLM Web UI — Iteration 2
 
 A web application skeleton for LLM inference with local authentication, Rutgers CAS integration, a protected dashboard, Jasmine unit tests, Cucumber acceptance tests, and Puppeteer browser automation.
 
