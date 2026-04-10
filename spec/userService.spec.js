@@ -122,4 +122,32 @@ describe("userService", () => {
     expect(user2.id).toBeGreaterThan(user1.id);
   });
 
+
+  it("rejects a password without a capital letter", async () => {
+    try {
+      await userService.createUser("testuser1", "Password1");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toContain("Password must be");
+    }
+  });
+
+  it("rejects a password without a number", async () => {
+    try {
+      await userService.createUser("testuser2", "Password");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toContain("Password must be");
+    }
+  });
+
+  it("rejects a password that is too short", async () => {
+    try {
+      await userService.createUser("testuser3", "A1");
+      fail("Expected error was not thrown");
+    } catch (err) {
+      expect(err.message).toContain("Password must be");
+    }
+  });
+
 });
