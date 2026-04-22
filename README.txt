@@ -6,7 +6,10 @@ A web application skeleton for LLM inference with local authentication, Rutgers 
 
 - Landing page
 - Account creation with SHA-256 password hashing
-- Login and logout
+- Login and logout + logout successful
+- Chat and converse with LLM
+- Sidebar on chat page to see recent conversations and start new chats
+- View full history of conversations with search bar included
 - Protected dashboard route
 - Rutgers CAS integration scaffold
 - Jasmine unit tests (14 specs)
@@ -18,6 +21,7 @@ A web application skeleton for LLM inference with local authentication, Rutgers 
 - Node.js / Express
 - express-session
 - MySQL (mysql2)
+- Ollama (LLM integration)
 - Jasmine (unit testing)
 - Cucumber.js (acceptance testing)
 - Puppeteer (browser automation)
@@ -30,6 +34,7 @@ Make sure the following are installed before running the project:
 - npm
 - Git
 - MySQL (running locally with a database and user configured)
+- Ollama (Model Version: llama3.2)
 
 To verify:
 
@@ -38,6 +43,7 @@ node -v
 npm -v
 git --version
 mysql --version
+ollama list
 ```
 
 ## Environment Setup
@@ -54,15 +60,31 @@ SESSION_SECRET=<any_random_string>
 PORT=3000
 ```
 
-You will also need to create the `users` table in your MySQL database:
+You will also need to create the 'users', 'conversations', 'messages' tables in your MySQL database:
 
 ```sql
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  auth_provider VARCHAR(50) DEFAULT 'local',
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255),
+  auth_provider VARCHAR(20) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE conversations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL DEFAULT 'New Conversation',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id INT NOT NULL,
+  role VARCHAR(10) NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 );
 ```
 
@@ -84,6 +106,22 @@ npm install
 3. Configure `.env` (see Environment Setup above)
 
 4. Run the unit test suite
+
+----IMPORTANT----
+***Before running any tests or server, you need to have the LLM/Ollama running in the background ON A SEPARATE TERMINAL to interact with the LLM on the app***
+
+```bash
+ollama run llama3.2
+```
+or
+
+```bash
+ollama serve
+```
+Running either of these methods above will let you be able to run the server without any issues and successfully interact with the LLM
+
+***Please make sure to run this in a new or different terminal then the terminal(s) you run/test the server on, will not work if it is on the same terminal***
+-----------------
 
 ```bash
 npm test

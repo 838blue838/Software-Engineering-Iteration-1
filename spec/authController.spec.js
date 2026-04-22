@@ -18,7 +18,7 @@
 
 //   it("signup stores session user and redirects", () => {
 //     const req = {
-//       body: { username: "bob", password: "pass" },
+//       body: { username: "bob", password: "Password1" },
 //       session: {}
 //     };
 
@@ -32,7 +32,7 @@
 
 //   it("login rejects invalid credentials", () => {
 //     const req = {
-//       body: { username: "bob", password: "wrong" },
+//       body: { username: "bob", password: "Password1" },
 //       session: {}
 //     };
 
@@ -45,10 +45,10 @@
 //   });
 
 //   it("login stores session user when credentials are valid", () => {
-//     userService.createUser("bob", "pass");
+//     userService.createUser("bob", "Password1");
 
 //     const req = {
-//       body: { username: "bob", password: "pass" },
+//       body: { username: "bob", password: "Password1" },
 //       session: {}
 //     };
 
@@ -82,7 +82,7 @@ describe("authController", () => {
 
   it("signup stores session user and redirects", async () => {
     const req = {
-      body: { username: "bob", password: "pass" },
+      body: { username: "bob", password: "Password1" },
       session: {}
     };
 
@@ -96,7 +96,7 @@ describe("authController", () => {
 
   it("login rejects invalid credentials", async () => {
     const req = {
-      body: { username: "bob", password: "wrong" },
+      body: { username: "bob", password: "Password1" },
       session: {}
     };
 
@@ -111,7 +111,7 @@ describe("authController", () => {
 
   it("login does not set session on failed login", async () => {
     const req = {
-      body: { username: "bob", password: "wrong" },
+      body: { username: "bob", password: "Password1" },
       session: {}
     };
 
@@ -123,10 +123,10 @@ describe("authController", () => {
   });
 
   it("login stores session user when credentials are valid", async () => {
-    await userService.createUser("bob", "pass");
+    await userService.createUser("bob", "Password1");
 
     const req = {
-      body: { username: "bob", password: "pass" },
+      body: { username: "bob", password: "Password1" },
       session: {}
     };
 
