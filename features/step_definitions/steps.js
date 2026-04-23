@@ -107,23 +107,50 @@ When('I create a new conversation', async function () {
 });
 
 Then('I should receive a conversation ID', function () {
-  // new conversation redirects to /chat?id=N — check redirect happened
   assert.ok(
-    lastResponse.status === 302 || lastResponse.status === 200,
-    `Expected redirect but got ${lastResponse.status}`
+    lastResponse.status === 200 || lastResponse.status === 302,
+    `Expected success but got ${lastResponse.status}`
   );
+
+  let conversationId = null;
+
   const location = lastResponse.headers['location'] || '';
   const match = location.match(/[?&]id=(\d+)/);
-  assert.ok(match, `Expected location header with id, got: ${location}`);
-  activeConversationId = parseInt(match[1], 10);
+  if (match) {
+    conversationId = parseInt(match[1], 10);
+  } else {
+    try {
+      const data = JSON.parse(lastResponse.body);
+      if (data && data.id) {
+        conversationId = data.id;
+      }
+    } catch (err) {}
+  }
+
+  assert.ok(conversationId, `Expected conversation id in redirect or JSON, got: ${lastResponse.body || location}`);
+  activeConversationId = conversationId;
 });
 
 Given('I have an active conversation', async function () {
   lastResponse = await makeRequest('POST', '/api/chat/new', {});
+
+  let conversationId = null;
+
   const location = lastResponse.headers['location'] || '';
   const match = location.match(/[?&]id=(\d+)/);
-  assert.ok(match, `Could not get conversation id from redirect: ${location}`);
-  activeConversationId = parseInt(match[1], 10);
+  if (match) {
+    conversationId = parseInt(match[1], 10);
+  } else {
+    try {
+      const data = JSON.parse(lastResponse.body);
+      if (data && data.id) {
+        conversationId = data.id;
+      }
+    } catch (err) {}
+  }
+
+  assert.ok(conversationId, `Could not get conversation id from redirect or JSON: ${lastResponse.body || location}`);
+  activeConversationId = conversationId;
 });
 
 When('I send the message {string}', async function (message) {
@@ -135,21 +162,50 @@ When('I send the message {string}', async function (message) {
 });
 
 Then('I should receive an assistant reply', function () {
-  assert.strictEqual(lastResponse.status, 200, `Expected 200 but got ${lastResponse.status}: ${lastResponse.body}`);
+  assert.strictEqual(
+    lastResponse.status,
+    200,
+    `Expected 200 but got ${lastResponse.status}: ${lastResponse.body}`
+  );
+
   const data = JSON.parse(lastResponse.body);
-  assert.ok(data.assistantMessage, 'Expected assistantMessage in response');
-  assert.ok(data.assistantMessage.content, 'Expected assistant message to have content');
+
+  const hasOldShape = data.assistantMessage && data.assistantMessage.content;
+  const hasNewShape =
+    Array.isArray(data.providerResponses) && data.providerResponses.length >= 1;
+
+  assert.ok(
+    hasOldShape || hasNewShape,
+    `Expected assistantMessage or providerResponses, got: ${lastResponse.body}`
+  );
 });
 
 When('I fetch the conversation', async function () {
   lastResponse = await makeRequest('GET', `/api/chat/conversations/${activeConversationId}`, '');
 });
-
+ 
 Then('the conversation should contain at least 1 message', function () {
   assert.strictEqual(lastResponse.status, 200);
+
   const data = JSON.parse(lastResponse.body);
-  assert.ok(Array.isArray(data.messages), 'Expected messages array');
-  assert.ok(data.messages.length >= 1, `Expected at least 1 message, got ${data.messages.length}`);
+
+  if (Array.isArray(data.messages)) {
+    assert.ok(
+      data.messages.length >= 1,
+      `Expected at least 1 message, got ${data.messages.length}`
+    );
+    return;
+  }
+
+  if (Array.isArray(data.turns)) {
+    assert.ok(
+      data.turns.length >= 1,
+      `Expected at least 1 turn, got ${data.turns.length}`
+    );
+    return;
+  }
+
+  assert.fail(`Expected messages or turns array, got: ${lastResponse.body}`);
 });
 
 // History steps

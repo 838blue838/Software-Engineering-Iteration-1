@@ -1,11 +1,18 @@
 const db = require("../config/db");
 
-async function createConversation(userId, title = "New Conversation") {
+async function createConversation(userId, title = "New Multi-LLM Chat") {
   const [result] = await db.execute(
     "INSERT INTO conversations (user_id, title) VALUES (?, ?)",
     [userId, title]
   );
-  return { id: result.insertId, user_id: userId, title };
+
+  return {
+    id: result.insertId,
+    user_id: userId,
+    title,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
 }
 
 async function getConversationsByUser(userId) {
@@ -25,7 +32,17 @@ async function getConversationById(id, userId) {
 }
 
 async function updateTitle(id, title) {
-  await db.execute("UPDATE conversations SET title = ? WHERE id = ?", [title, id]);
+  await db.execute(
+    "UPDATE conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [title, id]
+  );
+}
+
+async function touchConversation(id) {
+  await db.execute(
+    "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [id]
+  );
 }
 
 async function searchConversations(userId, term) {
@@ -41,4 +58,11 @@ async function searchConversations(userId, term) {
   return rows;
 }
 
-module.exports = { createConversation, getConversationsByUser, getConversationById, updateTitle, searchConversations };
+module.exports = {
+  createConversation,
+  getConversationsByUser,
+  getConversationById,
+  updateTitle,
+  touchConversation,
+  searchConversations
+};

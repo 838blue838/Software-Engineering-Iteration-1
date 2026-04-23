@@ -11,4 +11,4 @@ Feature: User Login
     Given I am on the login page
     When I enter username "wronguser" and password "wrongpass"
     And I click the login button
-    Then I should see an error messageG
+    Then I should see an error message

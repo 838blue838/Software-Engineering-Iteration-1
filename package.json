@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "jasmine",
-    "cucumber": "cucumber-js"
+    "cucumber": "cucumber-js",
+    "puppeteer:test": "node tests/puppeteer/chat-flow.js"
   },
   "dependencies": {
     "dotenv": "^17.3.1",

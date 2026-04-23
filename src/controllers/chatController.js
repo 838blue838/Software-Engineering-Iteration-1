@@ -1,15 +1,30 @@
 const chatService = require("../services/chatService");
 
+function getProviders(req, res) {
+  return res.json(chatService.getAvailableProviders());
+}
+
 async function newConversation(req, res) {
   const userId = req.session.user.id;
   const conversation = await chatService.createConversation(userId);
-  return res.redirect(`/chat?id=${conversation.id}`);
+  return res.json(conversation);
 }
 
 async function getConversations(req, res) {
   const userId = req.session.user.id;
   const conversations = await chatService.getConversations(userId);
-  return res.json(conversations);
+
+  const enriched = await Promise.all(
+    conversations.map(async (conversation) => {
+      const fullConversation = await chatService.getConversation(conversation.id, userId);
+      return {
+        ...conversation,
+        turnCount: fullConversation ? fullConversation.turns.length : 0
+      };
+    })
+  );
+
+  return res.json(enriched);
 }
 
 async function getConversation(req, res) {
@@ -27,21 +42,27 @@ async function getConversation(req, res) {
 async function sendMessage(req, res) {
   const userId = req.session.user.id;
   const conversationId = parseInt(req.params.id, 10);
-  const { content } = req.body;
+  const { content, providers } = req.body;
 
   if (!content || !content.trim()) {
     return res.status(400).json({ error: "Message content is required." });
   }
 
   try {
-    const result = await chatService.sendMessage(conversationId, userId, content.trim());
+    const result = await chatService.sendMessage(
+      conversationId,
+      userId,
+      content.trim(),
+      Array.isArray(providers) ? providers : []
+    );
+
     return res.json(result);
   } catch (error) {
     if (error.message === "Conversation not found.") {
       return res.status(404).json({ error: error.message });
     }
-    console.error("Send message error:", error);
-    return res.status(502).json({ error: "Could not reach the LLM. Make sure Ollama is running." });
+
+    return res.status(400).json({ error: error.message });
   }
 }
 
@@ -52,4 +73,11 @@ async function searchConversations(req, res) {
   return res.json(conversations);
 }
 
-module.exports = { newConversation, getConversations, getConversation, sendMessage, searchConversations };
+module.exports = {
+  getProviders,
+  newConversation,
+  getConversations,
+  getConversation,
+  sendMessage,
+  searchConversations
+};

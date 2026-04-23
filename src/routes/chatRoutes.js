@@ -5,6 +5,7 @@ const requireAuth = require("../middleware/requireAuth");
 
 router.use(requireAuth);
 
+router.get("/providers", chatController.getProviders);
 router.post("/new", chatController.newConversation);
 router.get("/conversations", chatController.getConversations);
 router.get("/conversations/:id", chatController.getConversation);

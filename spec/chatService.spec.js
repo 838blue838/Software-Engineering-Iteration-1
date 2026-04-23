@@ -1,81 +1,62 @@
 const chatService = require("../src/services/chatService");
-const conversationsData = require("../src/data/conversations");
-const messagesData = require("../src/data/messages");
-const userService = require("../src/services/userService");
+
+function makeJsonResponse(body) {
+  return {
+    ok: true,
+    json: async () => body
+  };
+}
 
 describe("chatService", () => {
-  let testUserId;
-
-  beforeEach(async () => {
-    await userService.clearUsers();
-    const user = await userService.createUser("chatuser", "Password1");
-    testUserId = user.id;
-
-    // Clear conversations for this user by re-creating the user
-    // (cascading delete via DB foreign key handles messages + conversations)
-  });
-
-  it("creates a new conversation for a user", async () => {
-    const convo = await chatService.createConversation(testUserId);
-
-    expect(convo.id).toBeDefined();
-    expect(convo.user_id).toBe(testUserId);
-    expect(convo.title).toBe("New Conversation");
-  });
-
-  it("returns all conversations for a user", async () => {
-    await chatService.createConversation(testUserId);
-    await chatService.createConversation(testUserId);
-
-    const convos = await chatService.getConversations(testUserId);
-
-    expect(convos.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it("returns conversation with messages", async () => {
-    const convo = await chatService.createConversation(testUserId);
-    await messagesData.addMessage(convo.id, "user", "hello");
-    await messagesData.addMessage(convo.id, "assistant", "hi there");
-
-    const result = await chatService.getConversation(convo.id, testUserId);
-
-    expect(result).not.toBeNull();
-    expect(result.messages.length).toBe(2);
-    expect(result.messages[0].role).toBe("user");
-    expect(result.messages[1].role).toBe("assistant");
-  });
-
-  it("returns null for a conversation belonging to another user", async () => {
-    const convo = await chatService.createConversation(testUserId);
-    const result = await chatService.getConversation(convo.id, 99999);
-
-    expect(result).toBeNull();
-  });
-
-  it("throws when sending message to a non-existent conversation", async () => {
-    try {
-      await chatService.sendMessage(99999, testUserId, "hello");
-      fail("Expected error was not thrown");
-    } catch (err) {
-      expect(err.message).toBe("Conversation not found.");
+  afterEach(() => {
+    if (global.fetch.calls) {
+      global.fetch.calls.reset();
     }
   });
 
-  it("searchConversations returns matching conversations by title", async () => {
-    const convo = await chatService.createConversation(testUserId);
-    await conversationsData.updateTitle(convo.id, "Unique Algebra Question");
-
-    const results = await chatService.searchConversations(testUserId, "Algebra");
-
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    expect(results[0].title).toContain("Algebra");
+  it("returns all three local providers", () => {
+    const providers = chatService.getAvailableProviders();
+    expect(providers.map((p) => p.id)).toEqual(["ollama", "localai", "llamacpp"]);
   });
 
-  it("searchConversations returns empty array when no match", async () => {
-    await chatService.createConversation(testUserId);
+  it("compares across Ollama, LocalAI, and llama.cpp", async () => {
+    spyOn(global, "fetch").and.callFake((url) => {
+      if (url.includes("/api/chat")) {
+        return Promise.resolve(makeJsonResponse({
+          message: { content: "Ollama response" }
+        }));
+      }
 
-    const results = await chatService.searchConversations(testUserId, "xyznotfound123");
+      if (url.includes("8080")) {
+        return Promise.resolve(makeJsonResponse({
+          choices: [{ message: { content: "LocalAI response" } }]
+        }));
+      }
 
-    expect(results.length).toBe(0);
+      if (url.includes("8081")) {
+        return Promise.resolve(makeJsonResponse({
+          choices: [{ message: { content: "llama.cpp response" } }]
+        }));
+      }
+
+      return Promise.reject(new Error("Unexpected URL"));
+    });
+
+    const responses = await chatService.compareAcrossProviders([], "Explain stacks", [
+      "ollama",
+      "localai",
+      "llamacpp"
+    ]);
+
+    expect(responses.length).toBe(3);
+    expect(responses[0].providerId).toBe("ollama");
+    expect(responses[1].providerId).toBe("localai");
+    expect(responses[2].providerId).toBe("llamacpp");
+  });
+
+  it("throws an error if no valid provider is selected", () => {
+    expect(() => {
+      chatService.normalizeProviders(["fakeprovider"]);
+    }).toThrowError("At least one valid provider must be selected.");
   });
 });

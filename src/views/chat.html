@@ -5,6 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM Chat</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .provider-picker {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .provider-picker label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .provider-picker input[type="checkbox"] {
+      width: auto;
+    }
+
+    .prompt-block {
+      margin: 18px 0 12px 0;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(124, 156, 255, 0.14);
+      color: #eef2ff;
+      font-weight: 600;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .compare-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .compare-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 1rem;
+    }
+
+    .compare-card p {
+      margin: 0;
+    }
+
+    @media (max-width: 950px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="chat-page">
@@ -33,7 +89,7 @@
       <main class="chat-main">
         <div class="chat-topbar">
           <div>
-            <div class="chat-topbar-label">Active Conversation</div>
+            <div class="chat-topbar-label">Multi-LLM Comparison</div>
             <h1 id="chatTitle">Select or start a conversation</h1>
           </div>
           <div class="chat-topbar-actions">
@@ -42,15 +98,17 @@
         </div>
 
         <div class="chat-status-banner" id="chatStatusBanner">
-          Continue an existing conversation or start a new one from the sidebar.
+          Submit one prompt and compare Ollama, LocalAI, and llama.cpp simultaneously.
         </div>
+
+        <div class="provider-picker" id="providerPicker"></div>
 
         <div class="chat-window-modern" id="chatWindow"></div>
 
         <div class="chat-composer">
           <form class="chat-form" id="chatForm">
-            <input type="text" id="messageInput" name="message" placeholder="Type your message here..." autocomplete="off" required>
-            <button type="submit" id="sendBtn">Send</button>
+            <input type="text" id="messageInput" name="message" placeholder="Type one prompt for all selected providers..." autocomplete="off" required>
+            <button type="submit" id="sendBtn">Compare</button>
           </form>
         </div>
       </main>
@@ -60,9 +118,29 @@
   <script>
     let activeConversationId = null;
     let allConversations = [];
+    let providers = [];
 
     function getIdFromUrl() {
       return new URLSearchParams(window.location.search).get("id");
+    }
+
+    async function loadProviders() {
+      const res = await fetch("/api/chat/providers");
+      providers = await res.json();
+
+      const picker = document.getElementById("providerPicker");
+      picker.innerHTML = "";
+
+      providers.forEach((provider) => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="checkbox" value="${provider.id}" checked> ${provider.label}`;
+        picker.appendChild(label);
+      });
+    }
+
+    function getSelectedProviders() {
+      return Array.from(document.querySelectorAll('#providerPicker input[type="checkbox"]:checked'))
+        .map((input) => input.value);
     }
 
     async function loadConversations() {
@@ -86,7 +164,7 @@
         a.className = `conversation-item ${convo.id === activeConversationId ? "active" : ""}`;
         a.innerHTML = `
           <div class="conversation-title">${escapeHtml(convo.title)}</div>
-          <div class="conversation-preview">${formatDate(convo.updated_at)}</div>
+          <div class="conversation-preview">${convo.turnCount} comparison(s)</div>
         `;
         a.addEventListener("click", (e) => {
           e.preventDefault();
@@ -107,106 +185,97 @@
         document.getElementById("chatWindow").innerHTML = '<p style="color:var(--danger);padding:8px;">Failed to load conversation.</p>';
         return;
       }
+
       const convo = await res.json();
       document.getElementById("chatTitle").textContent = convo.title;
-
-      renderMessages(convo.messages);
+      renderTurns(convo.turns);
       renderSidebar(allConversations);
     }
 
-    function renderMessages(messages) {
+    function renderTurns(turns) {
       const chatWindow = document.getElementById("chatWindow");
       chatWindow.innerHTML = "";
 
-      if (messages.length === 0) {
-        chatWindow.innerHTML = '<p style="color:var(--muted);padding:8px;">No messages yet. Send your first message below.</p>';
+      if (turns.length === 0) {
+        chatWindow.innerHTML = '<p style="color:var(--muted);padding:8px;">No prompts yet. Submit the first one below.</p>';
         return;
       }
 
-      messages.forEach((msg) => appendMessage(msg.role, msg.content));
+      turns.forEach((turn) => {
+        const promptBlock = document.createElement("div");
+        promptBlock.className = "prompt-block";
+        promptBlock.textContent = turn.prompt;
+        chatWindow.appendChild(promptBlock);
+
+        const grid = document.createElement("div");
+        grid.className = "compare-grid";
+
+        turn.responses.forEach((response) => {
+          const card = document.createElement("div");
+          card.className = "compare-card";
+          card.innerHTML = `
+            <h3>${escapeHtml(response.providerLabel)}</h3>
+            <p>${escapeHtml(response.text)}</p>
+          `;
+          grid.appendChild(card);
+        });
+
+        chatWindow.appendChild(grid);
+      });
+
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    function appendMessage(role, content) {
-      const chatWindow = document.getElementById("chatWindow");
-      const isUser = role === "user";
+    async function createConversationIfNeeded() {
+      if (activeConversationId) return;
 
-      const row = document.createElement("div");
-      row.className = `message-row ${isUser ? "message-row-user" : "message-row-bot"}`;
-      row.innerHTML = `
-        <div class="message-bubble ${isUser ? "message-bubble-user" : "message-bubble-bot"}">
-          <span class="message-role">${isUser ? "You" : "LLM"}</span>
-          <p>${escapeHtml(content)}</p>
-        </div>
-      `;
-      chatWindow.appendChild(row);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+      const res = await fetch("/api/chat/new", { method: "POST" });
+      const convo = await res.json();
+      activeConversationId = convo.id;
+      await loadConversations();
+      history.pushState(null, "", `/chat?id=${convo.id}`);
+      document.getElementById("chatTitle").textContent = convo.title;
     }
 
     document.getElementById("newChatBtn").addEventListener("click", async () => {
       const res = await fetch("/api/chat/new", { method: "POST" });
-      if (res.redirected) {
-        const url = new URL(res.url);
-        const id = parseInt(url.searchParams.get("id"), 10);
-        await loadConversations();
-        openConversation(id);
-        history.pushState(null, "", `/chat?id=${id}`);
-      }
+      const convo = await res.json();
+      await loadConversations();
+      await openConversation(convo.id);
+      history.pushState(null, "", `/chat?id=${convo.id}`);
     });
 
     document.getElementById("chatForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!activeConversationId) return;
+
+      await createConversationIfNeeded();
 
       const input = document.getElementById("messageInput");
       const content = input.value.trim();
+      const selectedProviders = getSelectedProviders();
+
       if (!content) return;
 
-      input.value = "";
       document.getElementById("sendBtn").disabled = true;
-
-      appendMessage("user", content);
-
-      const thinking = document.createElement("div");
-      thinking.className = "message-row message-row-bot";
-      thinking.id = "thinkingRow";
-      thinking.innerHTML = `
-        <div class="message-bubble message-bubble-bot">
-          <span class="message-role">LLM</span>
-          <p style="color:var(--muted);font-style:italic;">Thinking...</p>
-        </div>
-      `;
-      document.getElementById("chatWindow").appendChild(thinking);
-      document.getElementById("chatWindow").scrollTop = document.getElementById("chatWindow").scrollHeight;
 
       try {
         const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
+          body: JSON.stringify({ content, providers: selectedProviders })
         });
 
-        const row = document.getElementById("thinkingRow");
-        if (row) row.remove();
+        const data = await res.json();
 
         if (!res.ok) {
-          const err = await res.json();
-          appendMessage("assistant", `Error: ${err.error}`);
+          alert(data.error || "Something went wrong.");
         } else {
-          const data = await res.json();
-          appendMessage("assistant", data.assistantMessage.content);
-
-          // Refresh sidebar to show updated title/timestamp
+          input.value = "";
           await loadConversations();
-          const updated = allConversations.find(c => c.id === activeConversationId);
-          if (updated) {
-            document.getElementById("chatTitle").textContent = updated.title;
-          }
+          await openConversation(activeConversationId);
         }
-      } catch (err) {
-        const row = document.getElementById("thinkingRow");
-        if (row) row.remove();
-        appendMessage("assistant", "Network error. Please try again.");
+      } catch (error) {
+        alert("Network error. Please try again.");
       }
 
       document.getElementById("sendBtn").disabled = false;
@@ -214,33 +283,26 @@
 
     document.getElementById("sidebarSearch").addEventListener("input", (e) => {
       const term = e.target.value.toLowerCase();
-      const filtered = allConversations.filter(c => c.title.toLowerCase().includes(term));
+      const filtered = allConversations.filter((c) => c.title.toLowerCase().includes(term));
       renderSidebar(filtered);
     });
 
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
     }
 
-    function formatDate(ts) {
-      if (!ts) return "";
-      const d = new Date(ts);
-      const now = new Date();
-      const diff = Math.floor((now - d) / 1000);
-      if (diff < 60) return "Just now";
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return d.toLocaleDateString();
-    }
-
-    // Initialize
     (async () => {
+      await loadProviders();
       await loadConversations();
+
       const urlId = getIdFromUrl();
       if (urlId) {
         const id = parseInt(urlId, 10);
-        if (allConversations.find(c => c.id === id)) {
-          openConversation(id);
+        if (allConversations.find((c) => c.id === id)) {
+          await openConversation(id);
         }
       }
     })();

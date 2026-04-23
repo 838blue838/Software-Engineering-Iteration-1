@@ -1,0 +1,7 @@
+USE llm_site;
+
+ALTER TABLE messages
+MODIFY COLUMN role VARCHAR(20) NOT NULL;
+
+ALTER TABLE messages
+ADD COLUMN provider VARCHAR(50) NULL AFTER role;

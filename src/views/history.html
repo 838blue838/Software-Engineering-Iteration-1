@@ -13,7 +13,7 @@
         <div>
           <div class="history-label">Archive</div>
           <h1>Conversation History</h1>
-          <p>View, search, and reopen your previous conversations.</p>
+          <p>View, search, and reopen previous multi-LLM comparisons.</p>
         </div>
         <div class="history-header-actions">
           <a class="button button-secondary history-top-button" href="/chat">Go to Chat</a>
@@ -23,96 +23,55 @@
 
       <form class="history-search" onsubmit="return false;">
         <input type="text" id="historySearch" placeholder="Search conversations...">
-        <button type="button" id="searchBtn">Search</button>
+        <button type="button" onclick="filterHistory()">Search</button>
       </form>
 
-      <div class="history-grid" id="historyGrid">
-        <p style="color:var(--muted);">Loading your conversations...</p>
-      </div>
+      <div class="history-grid" id="historyGrid"></div>
     </div>
   </div>
 
   <script>
-    let searchTimeout = null;
+    let conversations = [];
 
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    async function loadHistory() {
+      const response = await fetch("/api/chat/conversations");
+      conversations = await response.json();
+      renderHistory(conversations);
     }
 
-    function formatDate(ts) {
-      if (!ts) return "";
-      const d = new Date(ts);
-      const now = new Date();
-      const diff = Math.floor((now - d) / 86400000);
-      if (diff === 0) return "Today";
-      if (diff === 1) return "Yesterday";
-      if (diff < 7) return `${diff} days ago`;
-      if (diff < 14) return "Last week";
-      return d.toLocaleDateString();
-    }
-
-    function renderGrid(conversations) {
+    function renderHistory(items) {
       const grid = document.getElementById("historyGrid");
+      grid.innerHTML = "";
 
-      if (conversations.length === 0) {
-        grid.innerHTML = '<p style="color:var(--muted);">No conversations found.</p>';
+      if (!items.length) {
+        grid.innerHTML = '<p style="color:var(--muted);">No saved conversations yet.</p>';
         return;
       }
 
-      grid.innerHTML = conversations.map((c) => `
-        <a class="history-card" href="/chat?id=${c.id}">
+      items.forEach((conversation) => {
+        const card = document.createElement("a");
+        card.className = "history-card";
+        card.href = `/chat?id=${conversation.id}`;
+        card.innerHTML = `
           <div class="history-card-top">
-            <h2>${escapeHtml(c.title)}</h2>
-            <span class="history-time">${formatDate(c.updated_at)}</span>
+            <h2>${conversation.title}</h2>
+            <span class="history-time">${new Date(conversation.updated_at).toLocaleDateString()}</span>
           </div>
-          <p>Started ${formatDate(c.created_at)}</p>
-        </a>
-      `).join("");
+          <p>${conversation.turnCount} comparison(s)</p>
+        `;
+        grid.appendChild(card);
+      });
     }
 
-    async function loadHistory() {
-      try {
-        const res = await fetch("/api/chat/conversations");
-        const conversations = await res.json();
-        renderGrid(conversations);
-      } catch (err) {
-        document.getElementById("historyGrid").innerHTML =
-          '<p style="color:var(--danger);">Failed to load conversations.</p>';
-      }
+    function filterHistory() {
+      const term = document.getElementById("historySearch").value.toLowerCase();
+      const filtered = conversations.filter((conversation) =>
+        conversation.title.toLowerCase().includes(term)
+      );
+      renderHistory(filtered);
     }
 
-    async function searchHistory(term) {
-      try {
-        const res = await fetch(`/api/chat/search?q=${encodeURIComponent(term)}`);
-        const conversations = await res.json();
-        renderGrid(conversations);
-      } catch (err) {
-        document.getElementById("historyGrid").innerHTML =
-          '<p style="color:var(--danger);">Search failed. Please try again.</p>';
-      }
-    }
-
-    document.getElementById("historySearch").addEventListener("input", (e) => {
-      const term = e.target.value.trim();
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        if (term.length === 0) {
-          loadHistory();
-        } else {
-          searchHistory(term);
-        }
-      }, 300);
-    });
-
-    document.getElementById("searchBtn").addEventListener("click", () => {
-      const term = document.getElementById("historySearch").value.trim();
-      if (term.length === 0) {
-        loadHistory();
-      } else {
-        searchHistory(term);
-      }
-    });
-
+    document.getElementById("historySearch").addEventListener("input", filterHistory);
     loadHistory();
   </script>
 </body>

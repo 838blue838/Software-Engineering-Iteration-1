@@ -12,26 +12,28 @@
       <div class="hero-badge">Workspace</div>
       <h1>Dashboard</h1>
       <p class="hero-text">
-        You are successfully logged in. Start a new conversation, continue an old one,
-        or review your previous chat history.
+        Start a new multi-LLM comparison, continue an earlier conversation,
+        or browse your saved chat history.
       </p>
 
       <div class="dashboard-grid">
         <div class="dashboard-panel dashboard-panel-primary">
-          <h2>Open Chat</h2>
-          <p>Go directly into the main chat interface and continue working.</p>
+          <h2>Compare Multiple LLMs</h2>
+          <p>Send one prompt and view responses from GPT-4, Claude, and Llama side by side.</p>
           <a class="button" href="/chat">Go to Chat</a>
         </div>
 
         <div class="dashboard-panel">
           <h2>Conversation History</h2>
-          <p>Browse older chats, search past conversations, and reopen threads.</p>
+          <p>View previous comparisons and reopen saved conversations.</p>
           <a class="button button-secondary" href="/history">View History</a>
         </div>
       </div>
 
       <div class="dashboard-footer-actions">
-        <a class="button button-secondary" href="logout.html">Logout</a>
+        <form action="/api/auth/logout" method="POST">
+          <button class="button button-secondary" type="submit">Logout</button>
+        </form>
       </div>
     </div>
   </div>
