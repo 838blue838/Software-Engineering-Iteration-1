@@ -606,3 +606,156 @@ button:hover,
     grid-template-columns: 1fr;
   }
 }
+
+
+.chat-multi-window {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+
+.llm-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  padding: 14px;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.llm-panel:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.llm-panel.active {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 156, 255, 0.14),
+    rgba(156, 124, 255, 0.10)
+  );
+}
+
+
+.llm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.llm-header span {
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+
+.llm-select-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border: none;
+  border-radius: 12px;
+  padding: 6px 10px;
+  margin-left: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  width: auto;
+}
+
+.llm-select-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
+}
+
+
+.llm-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.llm-messages .message {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.llm-messages .message.user {
+  background: rgba(124, 156, 255, 0.18);
+  color: var(--text);
+}
+
+.llm-messages .message.assistant {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+
+.model-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(99, 230, 190, 0.14);
+  color: #bfffea;
+  vertical-align: middle;
+}
+
+
+.history-model-select {
+  margin-top: 12px;
+}
+
+.history-model-select select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-model-select select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(124, 156, 255, 0.4);
+}
+
+
+.history-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+
+#activeModelLabel {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+
+.llm-panel + .llm-panel {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 16px;
+}
+
+
+@media (max-width: 900px) {
+  .llm-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .llm-select-btn {
+    margin-left: 0;
+    margin-right: 6px;
+    margin-top: 6px;
+  }
+}

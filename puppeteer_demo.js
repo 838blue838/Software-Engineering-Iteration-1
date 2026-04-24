@@ -3,97 +3,87 @@ const puppeteer = require('puppeteer');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false, slowMo: 80 });
+  const browser = await puppeteer.launch({ headless: false, slowMo: 50 });
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
 
-  // 0. Reset users so demo runs fresh
+  console.log("Starting Puppeteer Demo...");
+
+  
   await page.goto('http://localhost:3000');
   await page.evaluate(async () => {
     await fetch('/api/auth/reset-users', { method: 'POST' });
   });
   await sleep(1000);
 
-  // 1. Landing page
-  console.log('Step 1: Visiting landing page...');
-  await page.goto('http://localhost:3000');
-  await sleep(1500);
-
-  // 2. Go to signup
-  console.log('Step 2: Going to signup page...');
+  
+  console.log("Signing up...");
   await page.goto('http://localhost:3000/signup');
-  await sleep(1000);
 
-  // 3. Fill in signup form
-  console.log('Step 3: Signing up...');
   await page.type('input[name="username"]', 'demoUser');
-  await sleep(500);
   await page.type('input[name="password"]', 'DemoPass1');
-  await sleep(500);
 
-  // 4. Submit signup
-  console.log('Step 4: Submitting signup...');
-  await page.click('button[type="submit"]');
-  await sleep(2000);
-  console.log('After signup URL:', page.url());
+  await Promise.all([
+    page.click('button[type="submit"]'),
+    page.waitForNavigation({ waitUntil: 'networkidle2' })
+  ]);
 
-  // 5. Go to login page
-  console.log('Step 5: Going to login page...');
+  
+  console.log("Logging in...");
   await page.goto('http://localhost:3000/login');
-  await sleep(1000);
 
-  // 6. Fill in login form
-  console.log('Step 6: Logging in...');
   await page.type('input[name="username"]', 'demoUser');
-  await sleep(500);
   await page.type('input[name="password"]', 'DemoPass1');
-  await sleep(500);
 
-  // 7. Submit login
-  console.log('Step 7: Submitting login...');
-  await page.click('button[type="submit"]');
-  await sleep(2000);
-  console.log('After login URL:', page.url());
+  await Promise.all([
+    page.click('button[type="submit"]'),
+    page.waitForNavigation({ waitUntil: 'networkidle2' })
+  ]);
 
-  // 8. Go to chat page
-  console.log('Step 8: Going to chat page...');
+  
+  console.log("Opening chat...");
   await page.goto('http://localhost:3000/chat');
-  await sleep(2000);
 
-  // 9. Click New Chat button
-  console.log('Step 9: Starting new chat...');
+  
+  console.log("Creating new conversation...");
   await page.click('#newChatBtn');
-  await sleep(2000);
 
-  // 10. Type and send a message
-  console.log('Step 10: Typing a chat message...');
-  await page.click('#messageInput');
-  await page.type('#messageInput', 'Hello! Can you tell me a fun fact?');
-  await sleep(1000);
+  await page.waitForFunction(() => {
+    return window.location.href.includes("id=");
+  });
+
+  
+  console.log("Sending message to all LLMs...");
+  await page.type('#messageInput', 'Tell me a fun fact about space.');
   await page.click('#sendBtn');
-  console.log('Message sent! Waiting for LLM response...');
-  await sleep(15000);
 
-  // 11. Go to history page
-  console.log('Step 11: Viewing conversation history...');
+  
+  console.log("Waiting for LLM responses...");
+  await page.waitForFunction(() => {
+    const responses = document.querySelectorAll('.message.assistant');
+    return responses.length >= 3;
+  }, { timeout: 35000 });
+
+  console.log("Received responses from multiple LLMs");
+
+  
+  console.log("Opening history page...");
   await page.goto('http://localhost:3000/history');
-  await sleep(2000);
 
-  // 12. Search in history
-  console.log('Step 12: Searching conversation history...');
-  await page.click('#historySearch');
-  await page.type('#historySearch', 'fun fact');
-  await sleep(1000);
+  await page.waitForSelector('.history-card');
+
+  
+  console.log("Searching history...");
+  await page.type('#historySearch', 'space');
   await page.click('#searchBtn');
+
   await sleep(2000);
 
-  // 13. Go to dashboard
-  console.log('Step 13: Going to dashboard...');
-  await page.goto('http://localhost:3000/dashboard');
-  await sleep(1500);
+  console.log("Search completed");
 
-  // 14. Click logout
-  console.log('Step 14: Clicking logout...');
+  
+  console.log("Logging out...");
+
   const links = await page.$$('a, button');
   for (const link of links) {
     const text = await page.evaluate(el => el.textContent, link);
@@ -102,15 +92,20 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
       break;
     }
   }
+
+  
+  const buttons = await page.$$('button');
+  for (const btn of buttons) {
+    const text = await page.evaluate(el => el.textContent, btn);
+    if (text.toLowerCase().includes('logout') || text.toLowerCase().includes('confirm')) {
+      await btn.click();
+      break;
+    }
+  }
+
   await sleep(2000);
 
-  // 15. Confirm logout
-  console.log('Step 15: Confirming logout...');
-  await page.click('button[type="submit"]');
-  await sleep(2000);
-  console.log('After logout URL:', page.url());
+  console.log("✅ Demo complete!");
 
-  console.log('✅ Demo complete!');
-  await sleep(2000);
   await browser.close();
 })();

@@ -12,11 +12,11 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "mysql2": "^3.20.0",
-    "puppeteer": "^24.39.1",
+    "puppeteer": "^24.42.0",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^12.7.0",
+    "@cucumber/cucumber": "^12.8.1",
     "jasmine": "^5.1.0"
   }
 }

@@ -8,6 +8,7 @@ router.use(requireAuth);
 router.post("/new", chatController.newConversation);
 router.get("/conversations", chatController.getConversations);
 router.get("/conversations/:id", chatController.getConversation);
+router.post("/conversations/:id/model", chatController.setModel);
 router.post("/conversations/:id/message", chatController.sendMessage);
 router.get("/search", chatController.searchConversations);
 

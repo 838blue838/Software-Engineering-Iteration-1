@@ -9,6 +9,8 @@
 <body>
   <div class="chat-page">
     <div class="chat-shell">
+
+      
       <aside class="chat-sidebar">
         <div class="sidebar-header">
           <div>
@@ -30,29 +32,57 @@
         </div>
       </aside>
 
+      
       <main class="chat-main">
+
+        
         <div class="chat-topbar">
           <div>
             <div class="chat-topbar-label">Active Conversation</div>
             <h1 id="chatTitle">Select or start a conversation</h1>
+
+            
+            <div id="activeModelLabel" style="font-size:0.9rem;color:var(--muted);">
+              Showing all models
+            </div>
           </div>
+
           <div class="chat-topbar-actions">
-            <a class="button button-secondary topbar-button" href="/history">History</a>
+            
+            <button class="button button-secondary topbar-button"
+                    onclick="selectModel(null)">
+              Show All Models
+            </button>
+
+            <a class="button button-secondary topbar-button" href="/history">
+              History
+            </a>
           </div>
         </div>
 
+        
         <div class="chat-status-banner" id="chatStatusBanner">
           Continue an existing conversation or start a new one from the sidebar.
         </div>
 
-        <div class="chat-window-modern" id="chatWindow"></div>
+        
+        <div id="chatWindow"></div>
 
+        
         <div class="chat-composer">
           <form class="chat-form" id="chatForm">
-            <input type="text" id="messageInput" name="message" placeholder="Type your message here..." autocomplete="off" required>
+            <input
+              type="text"
+              id="messageInput"
+              name="message"
+              placeholder="Type your message here..."
+              autocomplete="off"
+              required
+            >
             <button type="submit" id="sendBtn">Send</button>
           </form>
         </div>
+
       </main>
     </div>
   </div>
@@ -60,6 +90,11 @@
   <script>
     let activeConversationId = null;
     let allConversations = [];
+
+    
+    let models = ["llama3.2", "mistral", "gemma"];
+    let activeModel = null; // null = all models
+    let currentMessages = {};
 
     function getIdFromUrl() {
       return new URLSearchParams(window.location.search).get("id");
@@ -76,7 +111,7 @@
       list.innerHTML = "";
 
       if (conversations.length === 0) {
-        list.innerHTML = '<p style="color:var(--muted);padding:8px 4px;font-size:0.9rem;">No conversations yet.</p>';
+        list.innerHTML = '<p style="color:var(--muted);padding:8px;">No conversations yet.</p>';
         return;
       }
 
@@ -86,74 +121,119 @@
         a.className = `conversation-item ${convo.id === activeConversationId ? "active" : ""}`;
         a.innerHTML = `
           <div class="conversation-title">${escapeHtml(convo.title)}</div>
-          <div class="conversation-preview">${formatDate(convo.updated_at)}</div>
+          <div class="conversation-preview">
+            ${formatDate(convo.updated_at)}
+          </div>
         `;
-        a.addEventListener("click", (e) => {
+
+        a.onclick = (e) => {
           e.preventDefault();
           openConversation(convo.id);
           history.pushState(null, "", `/chat?id=${convo.id}`);
-        });
+        };
+
         list.appendChild(a);
       });
     }
 
     async function openConversation(id) {
       activeConversationId = id;
+
       document.getElementById("chatStatusBanner").style.display = "none";
-      document.getElementById("chatWindow").innerHTML = '<p style="color:var(--muted);padding:8px;">Loading...</p>';
+      document.getElementById("chatWindow").innerHTML = "Loading...";
 
       const res = await fetch(`/api/chat/conversations/${id}`);
-      if (!res.ok) {
-        document.getElementById("chatWindow").innerHTML = '<p style="color:var(--danger);padding:8px;">Failed to load conversation.</p>';
-        return;
-      }
       const convo = await res.json();
+
       document.getElementById("chatTitle").textContent = convo.title;
 
-      renderMessages(convo.messages);
+      models = convo.models || ["llama3.2", "mistral", "gemma"];
+      activeModel = convo.selected_model || null;
+      currentMessages = convo.messages || {};
+
+      updateModelLabel();
+      renderMultiChat();
       renderSidebar(allConversations);
     }
 
-    function renderMessages(messages) {
+    function updateModelLabel() {
+      document.getElementById("activeModelLabel").textContent =
+        activeModel ? `Focused: ${activeModel}` : "Showing all models";
+    }
+
+    
+    function renderMultiChat() {
       const chatWindow = document.getElementById("chatWindow");
       chatWindow.innerHTML = "";
 
-      if (messages.length === 0) {
-        chatWindow.innerHTML = '<p style="color:var(--muted);padding:8px;">No messages yet. Send your first message below.</p>';
-        return;
-      }
+      const wrapper = document.createElement("div");
+      wrapper.className = "chat-multi-window";
 
-      messages.forEach((msg) => appendMessage(msg.role, msg.content));
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+      models.forEach(model => {
+
+        if (activeModel && model !== activeModel) return;
+
+        const panel = document.createElement("div");
+        panel.className = "llm-panel";
+        if (activeModel === model) panel.classList.add("active");
+
+        const msgs = currentMessages?.[model] || [];
+
+        panel.innerHTML = `
+          <div class="llm-header">
+            <span>${model}</span>
+            <div>
+              <button onclick="selectModel('${model}')" class="llm-select-btn">Focus</button>
+              <button onclick="selectModel(null)" class="llm-select-btn">All</button>
+            </div>
+          </div>
+
+          <div class="llm-messages" id="messages-${model}">
+            ${msgs.map(m => `
+              <div class="message ${m.role}">
+                <p>${escapeHtml(m.content)}</p>
+              </div>
+            `).join("")}
+          </div>
+        `;
+
+        wrapper.appendChild(panel);
+      });
+
+      chatWindow.appendChild(wrapper);
     }
 
-    function appendMessage(role, content) {
-      const chatWindow = document.getElementById("chatWindow");
-      const isUser = role === "user";
+    
+    async function selectModel(model) {
+      if (!activeConversationId) return;
 
-      const row = document.createElement("div");
-      row.className = `message-row ${isUser ? "message-row-user" : "message-row-bot"}`;
-      row.innerHTML = `
-        <div class="message-bubble ${isUser ? "message-bubble-user" : "message-bubble-bot"}">
-          <span class="message-role">${isUser ? "You" : "LLM"}</span>
-          <p>${escapeHtml(content)}</p>
-        </div>
-      `;
-      chatWindow.appendChild(row);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+      await fetch(`/api/chat/conversations/${activeConversationId}/model`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model })
+      });
+
+      activeModel = model;
+
+      
+      await openConversation(activeConversationId);
     }
 
+    
     document.getElementById("newChatBtn").addEventListener("click", async () => {
       const res = await fetch("/api/chat/new", { method: "POST" });
+
       if (res.redirected) {
         const url = new URL(res.url);
         const id = parseInt(url.searchParams.get("id"), 10);
+
         await loadConversations();
         openConversation(id);
         history.pushState(null, "", `/chat?id=${id}`);
       }
     });
 
+    
     document.getElementById("chatForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!activeConversationId) return;
@@ -163,63 +243,42 @@
       if (!content) return;
 
       input.value = "";
-      document.getElementById("sendBtn").disabled = true;
 
-      appendMessage("user", content);
+      
+      models.forEach(m => {
+        if (!currentMessages[m]) currentMessages[m] = [];
+        currentMessages[m].push({ role: "user", content });
+      });
 
-      const thinking = document.createElement("div");
-      thinking.className = "message-row message-row-bot";
-      thinking.id = "thinkingRow";
-      thinking.innerHTML = `
-        <div class="message-bubble message-bubble-bot">
-          <span class="message-role">LLM</span>
-          <p style="color:var(--muted);font-style:italic;">Thinking...</p>
-        </div>
-      `;
-      document.getElementById("chatWindow").appendChild(thinking);
-      document.getElementById("chatWindow").scrollTop = document.getElementById("chatWindow").scrollHeight;
+      renderMultiChat();
 
-      try {
-        const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
-        });
+      const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, model: activeModel })
+      });
 
-        const row = document.getElementById("thinkingRow");
-        if (row) row.remove();
+      const data = await res.json();
 
-        if (!res.ok) {
-          const err = await res.json();
-          appendMessage("assistant", `Error: ${err.error}`);
-        } else {
-          const data = await res.json();
-          appendMessage("assistant", data.assistantMessage.content);
-
-          // Refresh sidebar to show updated title/timestamp
-          await loadConversations();
-          const updated = allConversations.find(c => c.id === activeConversationId);
-          if (updated) {
-            document.getElementById("chatTitle").textContent = updated.title;
-          }
-        }
-      } catch (err) {
-        const row = document.getElementById("thinkingRow");
-        if (row) row.remove();
-        appendMessage("assistant", "Network error. Please try again.");
-      }
-
-      document.getElementById("sendBtn").disabled = false;
+      currentMessages = data.messages;
+      renderMultiChat();
+      loadConversations();
     });
 
+    
     document.getElementById("sidebarSearch").addEventListener("input", (e) => {
       const term = e.target.value.toLowerCase();
-      const filtered = allConversations.filter(c => c.title.toLowerCase().includes(term));
+      const filtered = allConversations.filter(c =>
+        c.title.toLowerCase().includes(term)
+      );
       renderSidebar(filtered);
     });
 
+    
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return text.replace(/&/g,"&amp;")
+                .replace(/</g,"&lt;")
+                .replace(/>/g,"&gt;");
     }
 
     function formatDate(ts) {
@@ -227,23 +286,20 @@
       const d = new Date(ts);
       const now = new Date();
       const diff = Math.floor((now - d) / 1000);
+
       if (diff < 60) return "Just now";
       if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
       if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
       return d.toLocaleDateString();
     }
 
-    // Initialize
+    
     (async () => {
       await loadConversations();
-      const urlId = getIdFromUrl();
-      if (urlId) {
-        const id = parseInt(urlId, 10);
-        if (allConversations.find(c => c.id === id)) {
-          openConversation(id);
-        }
-      }
+      const id = getIdFromUrl();
+      if (id) openConversation(parseInt(id));
     })();
+
   </script>
 </body>
 </html>

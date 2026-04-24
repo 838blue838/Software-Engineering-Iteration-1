@@ -1,28 +1,58 @@
 CREATE DATABASE llm_site;
 USE llm_site;
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(255),
-  auth_provider VARCHAR(20) NOT NULL,
+  auth_provider VARCHAR(20) NOT NULL DEFAULT 'local',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE conversations (
+
+CREATE TABLE IF NOT EXISTS conversations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  title VARCHAR(255) NOT NULL DEFAULT 'New Conversation',
+  title VARCHAR(255) DEFAULT 'New Chat',
+  selected_model VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-CREATE TABLE messages (
+
+
+CREATE TABLE IF NOT EXISTS messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   conversation_id INT NOT NULL,
-  role VARCHAR(10) NOT NULL,
+  role ENUM('user', 'assistant') NOT NULL,
   content TEXT NOT NULL,
+  model VARCHAR(50) NOT NULL DEFAULT 'llama3.2',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_conversations_user 
+ON conversations(user_id);
+
+CREATE INDEX idx_messages_conversation 
+ON messages(conversation_id);
+
+CREATE INDEX idx_messages_convo_model 
+ON messages(conversation_id, model);
+
+CREATE INDEX idx_conversations_title 
+ON conversations(title);
+
+ALTER TABLE messages 
+ADD COLUMN model VARCHAR(50) NOT NULL DEFAULT 'llama3.2';
+
+CREATE INDEX idx_convo_model 
+ON messages(conversation_id, model);
+
+ALTER TABLE conversations
+ADD COLUMN default_model VARCHAR(50) DEFAULT 'llama3.2';
+
+ALTER TABLE conversations
+ADD COLUMN selected_model VARCHAR(50) DEFAULT NULL;
+
 CREATE USER 'devuser'@'localhost' IDENTIFIED BY 'Password123';
 GRANT ALL PRIVILEGES ON llm_site.* TO 'devuser'@'localhost';
 FLUSH PRIVILEGES;
