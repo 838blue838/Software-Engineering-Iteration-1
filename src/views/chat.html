@@ -184,11 +184,25 @@
 
     document.getElementById("chatForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!activeConversationId) return;
 
       const input = document.getElementById("messageInput");
       const content = input.value.trim();
       if (!content) return;
+
+      // Auto-create a new conversation if none is active
+      if (!activeConversationId) {
+        const res = await fetch("/api/chat/new", { method: "POST" });
+        if (res.redirected) {
+          const url = new URL(res.url);
+          activeConversationId = parseInt(url.searchParams.get("id"), 10);
+          await loadConversations();
+          history.pushState(null, "", `/chat?id=${activeConversationId}`);
+          document.getElementById("chatStatusBanner").style.display = "none";
+          document.getElementById("chatWindow").innerHTML = "";
+        } else {
+          return;
+        }
+      }
 
       input.value = "";
       document.getElementById("sendBtn").disabled = true;
