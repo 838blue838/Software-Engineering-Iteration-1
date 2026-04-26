@@ -5,6 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM Chat</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .tools-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 8px 16px;
+      background: rgba(20, 20, 35, 0.5);
+      border-bottom: 1px solid #222;
+      font-size: 0.85rem;
+    }
+    .tools-bar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #ccc;
+    }
+    .tools-bar input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .tools-bar button {
+      background: #1a1a2e;
+      color: white;
+      border: 1px solid #333;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .tools-bar button:hover {
+      background: #2a2a4e;
+    }
+    .tools-bar .tools-info {
+      color: #888;
+      font-size: 0.8rem;
+      margin-left: auto;
+    }
+    .context-badge {
+      background: #4a3a8a;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+    }
+    .context-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .context-modal.active { display: flex; }
+    .context-modal-inner {
+      background: #1a1a2e;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+    }
+    .context-modal textarea {
+      width: 100%;
+      height: 250px;
+      background: #0f0f1e;
+      color: white;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    .context-modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+  </style>
 </head>
 <body>
   <div class="chat-page">
@@ -44,6 +125,16 @@
           </div>
         </div>
 
+        <div class="tools-bar">
+          <label>
+            <input type="checkbox" id="cotToggle">
+            <span>🧠 Think step-by-step</span>
+          </label>
+          <button id="contextBtn" type="button">📄 Add Context</button>
+          <span id="contextBadge" class="context-badge" style="display:none;">Context loaded</span>
+          <span class="tools-info">Auto-tools: 🧮 Math · 🌤️ Weather</span>
+        </div>
+
         <div class="chat-status-banner" id="chatStatusBanner">
           Continue an existing conversation or start a new one from the sidebar.
         </div>
@@ -57,6 +148,20 @@
           </form>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Context Upload Modal -->
+  <div class="context-modal" id="contextModal">
+    <div class="context-modal-inner">
+      <h2 style="color:white;margin-top:0;">Add Context Document</h2>
+      <p style="color:#aaa;font-size:0.9rem;">Paste any text below. The LLM will use it to answer your questions in this conversation.</p>
+      <textarea id="contextText" placeholder="Paste your document, notes, code, or any reference material here..."></textarea>
+      <div class="context-modal-actions">
+        <button class="button button-secondary" id="contextClearBtn" type="button">Clear</button>
+        <button class="button button-secondary" id="contextCancelBtn" type="button">Cancel</button>
+        <button class="button" id="contextSaveBtn" type="button" style="background: linear-gradient(135deg, #6c8eef, #a972f8); color: white;">Save Context</button>
+      </div>
     </div>
   </div>
 
@@ -140,6 +245,18 @@
 
       renderMessages(convo.messages);
       renderSidebar(allConversations);
+      await checkContextStatus();
+    }
+
+    async function checkContextStatus() {
+      if (!activeConversationId) return;
+      try {
+        const res = await fetch(`/api/chat/conversations/${activeConversationId}/context`);
+        const data = await res.json();
+        document.getElementById("contextBadge").style.display = data.hasContext ? "inline-block" : "none";
+      } catch (err) {
+        console.error("Context status error:", err);
+      }
     }
 
     function renderMessages(messages) {
@@ -223,10 +340,11 @@
 
       try {
         const selectedModel = document.getElementById("modelSelector").value;
+        const chainOfThought = document.getElementById("cotToggle").checked;
         const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, model: selectedModel })
+          body: JSON.stringify({ content, model: selectedModel, chainOfThought })
         });
 
         const row = document.getElementById("thinkingRow");
@@ -239,7 +357,6 @@
           const data = await res.json();
           appendMessage("assistant", data.assistantMessage.content);
 
-          // Refresh sidebar to show updated title/timestamp
           await loadConversations();
           const updated = allConversations.find(c => c.id === activeConversationId);
           if (updated) {
@@ -259,6 +376,44 @@
       const term = e.target.value.toLowerCase();
       const filtered = allConversations.filter(c => c.title.toLowerCase().includes(term));
       renderSidebar(filtered);
+    });
+
+    // Context modal handlers
+    document.getElementById("contextBtn").addEventListener("click", () => {
+      if (!activeConversationId) {
+        alert("Please start a conversation first before adding context.");
+        return;
+      }
+      document.getElementById("contextModal").classList.add("active");
+    });
+
+    document.getElementById("contextCancelBtn").addEventListener("click", () => {
+      document.getElementById("contextModal").classList.remove("active");
+    });
+
+    document.getElementById("contextClearBtn").addEventListener("click", async () => {
+      if (!activeConversationId) return;
+      await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "" })
+      });
+      document.getElementById("contextText").value = "";
+      document.getElementById("contextBadge").style.display = "none";
+      document.getElementById("contextModal").classList.remove("active");
+    });
+
+    document.getElementById("contextSaveBtn").addEventListener("click", async () => {
+      if (!activeConversationId) return;
+      const text = document.getElementById("contextText").value;
+      const res = await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      document.getElementById("contextBadge").style.display = data.hasContext ? "inline-block" : "none";
+      document.getElementById("contextModal").classList.remove("active");
     });
 
     function escapeHtml(text) {

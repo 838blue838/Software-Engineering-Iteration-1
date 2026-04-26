@@ -9,6 +9,8 @@ router.post("/new", chatController.newConversation);
 router.get("/conversations", chatController.getConversations);
 router.get("/conversations/:id", chatController.getConversation);
 router.post("/conversations/:id/message", chatController.sendMessage);
+router.post("/conversations/:id/context", chatController.setContext);
+router.get("/conversations/:id/context", chatController.getContextStatus);
 router.get("/search", chatController.searchConversations);
 router.get("/models", chatController.listModels);
 

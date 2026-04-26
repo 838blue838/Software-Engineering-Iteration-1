@@ -27,14 +27,20 @@ async function getConversation(req, res) {
 async function sendMessage(req, res) {
   const userId = req.session.user.id;
   const conversationId = parseInt(req.params.id, 10);
-  const { content, model } = req.body;
+  const { content, model, chainOfThought } = req.body;
 
   if (!content || !content.trim()) {
     return res.status(400).json({ error: "Message content is required." });
   }
 
   try {
-    const result = await chatService.sendMessage(conversationId, userId, content.trim(), model);
+    const result = await chatService.sendMessage(
+      conversationId,
+      userId,
+      content.trim(),
+      model,
+      chainOfThought === true
+    );
     return res.json(result);
   } catch (error) {
     if (error.message === "Conversation not found.") {
@@ -65,4 +71,31 @@ async function listModels(req, res) {
   }
 }
 
-module.exports = { newConversation, getConversations, getConversation, sendMessage, searchConversations, listModels };
+async function setContext(req, res) {
+  const conversationId = parseInt(req.params.id, 10);
+  const { text } = req.body;
+
+  if (!text) {
+    chatService.clearDocumentContext(conversationId);
+    return res.json({ message: "Context cleared.", hasContext: false });
+  }
+
+  chatService.setDocumentContext(conversationId, text);
+  return res.json({ message: "Context saved.", hasContext: true });
+}
+
+async function getContextStatus(req, res) {
+  const conversationId = parseInt(req.params.id, 10);
+  return res.json({ hasContext: chatService.hasDocumentContext(conversationId) });
+}
+
+module.exports = {
+  newConversation,
+  getConversations,
+  getConversation,
+  sendMessage,
+  searchConversations,
+  listModels,
+  setContext,
+  getContextStatus
+};
