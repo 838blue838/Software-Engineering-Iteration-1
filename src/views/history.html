@@ -5,6 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversation History</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .history-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .history-card-body {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .history-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .history-action-btn {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border: 0;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      padding: 0;
+    }
+
+    .history-action-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .history-action-btn.danger:hover {
+      background: rgba(255, 86, 86, 0.22);
+    }
+  </style>
 </head>
 <body>
   <div class="page page-top">
@@ -13,7 +58,7 @@
         <div>
           <div class="history-label">Archive</div>
           <h1>Conversation History</h1>
-          <p>View, search, and reopen your previous conversations.</p>
+          <p>View, search, rename, reopen, and delete your previous conversations.</p>
         </div>
         <div class="history-header-actions">
           <a class="button button-secondary history-top-button" href="/chat">Go to Chat</a>
@@ -36,7 +81,10 @@
     let searchTimeout = null;
 
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
     }
 
     function formatDate(ts) {
@@ -51,6 +99,65 @@
       return d.toLocaleDateString();
     }
 
+    function getCurrentSearchTerm() {
+      return document.getElementById("historySearch").value.trim();
+    }
+
+    function goToConversation(conversationId) {
+      window.location.href = `/chat?id=${conversationId}`;
+    }
+
+    async function refreshHistoryView() {
+      const term = getCurrentSearchTerm();
+      if (term.length === 0) {
+        await loadHistory();
+      } else {
+        await searchHistory(term);
+      }
+    }
+
+    async function renameConversationFromUI(conversation) {
+      const nextTitle = prompt("Rename conversation:", conversation.title || "");
+      if (nextTitle === null) return;
+
+      const cleanedTitle = nextTitle.trim();
+      if (!cleanedTitle) {
+        alert("Conversation title is required.");
+        return;
+      }
+
+      const res = await fetch(`/api/chat/conversations/${conversation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: cleanedTitle })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not rename conversation." }));
+        alert(err.error || "Could not rename conversation.");
+        return;
+      }
+
+      await refreshHistoryView();
+    }
+
+    async function deleteConversationFromUI(conversationId) {
+      const confirmed = confirm("Delete this conversation? This cannot be undone.");
+      if (!confirmed) return;
+
+      const res = await fetch(`/api/chat/conversations/${conversationId}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not delete conversation." }));
+        alert(err.error || "Could not delete conversation.");
+        return;
+      }
+
+      await refreshHistoryView();
+    }
+
     function renderGrid(conversations) {
       const grid = document.getElementById("historyGrid");
 
@@ -59,15 +166,49 @@
         return;
       }
 
-      grid.innerHTML = conversations.map((c) => `
-        <a class="history-card" href="/chat?id=${c.id}">
-          <div class="history-card-top">
-            <h2>${escapeHtml(c.title)}</h2>
-            <span class="history-time">${formatDate(c.updated_at)}</span>
+      grid.innerHTML = "";
+
+      conversations.forEach((c) => {
+        const card = document.createElement("div");
+        card.className = "history-card";
+        card.innerHTML = `
+          <div class="history-card-body" role="button" tabindex="0">
+            <div class="history-card-top">
+              <h2>${escapeHtml(c.title)}</h2>
+              <span class="history-time">${formatDate(c.updated_at)}</span>
+            </div>
+            <p>Started ${formatDate(c.created_at)}</p>
           </div>
-          <p>Started ${formatDate(c.created_at)}</p>
-        </a>
-      `).join("");
+          <div class="history-card-actions">
+            <button class="history-action-btn" type="button" title="Rename conversation">✏️</button>
+            <button class="history-action-btn danger" type="button" title="Delete conversation">🗑️</button>
+          </div>
+        `;
+
+        const body = card.querySelector(".history-card-body");
+        const renameBtn = card.querySelector(".history-action-btn:not(.danger)");
+        const deleteBtn = card.querySelector(".history-action-btn.danger");
+
+        body.addEventListener("click", () => goToConversation(c.id));
+        body.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            goToConversation(c.id);
+          }
+        });
+
+        renameBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await renameConversationFromUI(c);
+        });
+
+        deleteBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await deleteConversationFromUI(c.id);
+        });
+
+        grid.appendChild(card);
+      });
     }
 
     async function loadHistory() {
