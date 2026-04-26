@@ -1,23 +1,6 @@
 const conversationsData = require("../data/conversations");
 const messagesData = require("../data/messages");
-
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
-
-async function queryOllama(messages) {
-  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ollama request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.message.content;
-}
+const llmRouter = require("./llm/llmRouter");
 
 async function createConversation(userId) {
   return await conversationsData.createConversation(userId);
@@ -35,7 +18,7 @@ async function getConversation(conversationId, userId) {
   return { ...conversation, messages };
 }
 
-async function sendMessage(conversationId, userId, userContent) {
+async function sendMessage(conversationId, userId, userContent, model) {
   const conversation = await conversationsData.getConversationById(conversationId, userId);
   if (!conversation) throw new Error("Conversation not found.");
 
@@ -49,19 +32,23 @@ async function sendMessage(conversationId, userId, userContent) {
 
   const userMessage = await messagesData.addMessage(conversationId, "user", userContent);
 
-  const ollamaMessages = [
+  const llmMessages = [
     ...history.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: userContent }
   ];
 
-  const assistantContent = await queryOllama(ollamaMessages);
+  const assistantContent = await llmRouter.chat(model, llmMessages);
   const assistantMessage = await messagesData.addMessage(conversationId, "assistant", assistantContent);
 
-  return { userMessage, assistantMessage };
+  return { userMessage, assistantMessage, model: model || llmRouter.DEFAULT_MODEL };
 }
 
 async function searchConversations(userId, term) {
   return await conversationsData.searchConversations(userId, term);
 }
 
-module.exports = { createConversation, getConversations, getConversation, sendMessage, searchConversations };
+async function listModels() {
+  return await llmRouter.listAllModels();
+}
+
+module.exports = { createConversation, getConversations, getConversation, sendMessage, searchConversations, listModels };

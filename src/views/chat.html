@@ -37,6 +37,9 @@
             <h1 id="chatTitle">Select or start a conversation</h1>
           </div>
           <div class="chat-topbar-actions">
+            <select id="modelSelector" style="padding: 8px 12px; border-radius: 8px; background: #1a1a2e; color: white; border: 1px solid #333; margin-right: 10px;">
+              <option value="">Loading models...</option>
+            </select>
             <a class="button button-secondary topbar-button" href="/history">History</a>
           </div>
         </div>
@@ -63,6 +66,31 @@
 
     function getIdFromUrl() {
       return new URLSearchParams(window.location.search).get("id");
+    }
+
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/chat/models");
+        const data = await res.json();
+        const selector = document.getElementById("modelSelector");
+        selector.innerHTML = "";
+
+        for (const [providerKey, provider] of Object.entries(data)) {
+          if (provider.models.length === 0) continue;
+          const group = document.createElement("optgroup");
+          group.label = provider.available ? provider.name : `${provider.name} (API key required)`;
+          provider.models.forEach(model => {
+            const opt = document.createElement("option");
+            opt.value = model;
+            opt.textContent = model;
+            if (!provider.available) opt.disabled = true;
+            group.appendChild(opt);
+          });
+          selector.appendChild(group);
+        }
+      } catch (err) {
+        console.error("Failed to load models:", err);
+      }
     }
 
     async function loadConversations() {
@@ -180,10 +208,11 @@
       document.getElementById("chatWindow").scrollTop = document.getElementById("chatWindow").scrollHeight;
 
       try {
+        const selectedModel = document.getElementById("modelSelector").value;
         const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
+          body: JSON.stringify({ content, model: selectedModel })
         });
 
         const row = document.getElementById("thinkingRow");
@@ -235,6 +264,7 @@
 
     // Initialize
     (async () => {
+      await loadModels();
       await loadConversations();
       const urlId = getIdFromUrl();
       if (urlId) {

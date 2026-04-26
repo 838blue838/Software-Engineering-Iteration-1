@@ -10,5 +10,6 @@ router.get("/conversations", chatController.getConversations);
 router.get("/conversations/:id", chatController.getConversation);
 router.post("/conversations/:id/message", chatController.sendMessage);
 router.get("/search", chatController.searchConversations);
+router.get("/models", chatController.listModels);
 
 module.exports = router;

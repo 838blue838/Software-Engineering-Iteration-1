@@ -27,21 +27,24 @@ async function getConversation(req, res) {
 async function sendMessage(req, res) {
   const userId = req.session.user.id;
   const conversationId = parseInt(req.params.id, 10);
-  const { content } = req.body;
+  const { content, model } = req.body;
 
   if (!content || !content.trim()) {
     return res.status(400).json({ error: "Message content is required." });
   }
 
   try {
-    const result = await chatService.sendMessage(conversationId, userId, content.trim());
+    const result = await chatService.sendMessage(conversationId, userId, content.trim(), model);
     return res.json(result);
   } catch (error) {
     if (error.message === "Conversation not found.") {
       return res.status(404).json({ error: error.message });
     }
+    if (error.message.includes("API key not configured")) {
+      return res.status(400).json({ error: error.message });
+    }
     console.error("Send message error:", error);
-    return res.status(502).json({ error: "Could not reach the LLM. Make sure Ollama is running." });
+    return res.status(502).json({ error: `Could not reach the LLM: ${error.message}` });
   }
 }
 
@@ -52,4 +55,14 @@ async function searchConversations(req, res) {
   return res.json(conversations);
 }
 
-module.exports = { newConversation, getConversations, getConversation, sendMessage, searchConversations };
+async function listModels(req, res) {
+  try {
+    const models = await chatService.listModels();
+    return res.json(models);
+  } catch (error) {
+    console.error("List models error:", error);
+    return res.status(500).json({ error: "Could not list models." });
+  }
+}
+
+module.exports = { newConversation, getConversations, getConversation, sendMessage, searchConversations, listModels };
