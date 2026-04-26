@@ -1,28 +1,36 @@
-// In-memory document store per conversation
-// Lets users upload text/context that gets prepended to LLM messages
+const conversationsData = require("../../data/conversations");
 
-const conversationContexts = new Map();
-
-function setContext(conversationId, text) {
+function normalizeContext(text) {
   if (!text || text.trim().length === 0) {
-    conversationContexts.delete(conversationId);
+    return null;
+  }
+
+  // Keep a size cap so we do not overload the prompt/context window
+  return text.slice(0, 5000);
+}
+
+async function setContext(conversationId, text) {
+  const normalized = normalizeContext(text);
+
+  if (!normalized) {
+    await conversationsData.clearContextText(conversationId);
     return;
   }
-  // Limit to 5000 chars to avoid blowing up the context window
-  const truncated = text.slice(0, 5000);
-  conversationContexts.set(conversationId, truncated);
+
+  await conversationsData.setContextText(conversationId, normalized);
 }
 
-function getContext(conversationId) {
-  return conversationContexts.get(conversationId) || null;
+async function getContext(conversationId) {
+  return await conversationsData.getContextText(conversationId);
 }
 
-function hasContext(conversationId) {
-  return conversationContexts.has(conversationId);
+async function hasContext(conversationId) {
+  const context = await conversationsData.getContextText(conversationId);
+  return !!(context && context.trim().length > 0);
 }
 
-function clearContext(conversationId) {
-  conversationContexts.delete(conversationId);
+async function clearContext(conversationId) {
+  await conversationsData.clearContextText(conversationId);
 }
 
 module.exports = { setContext, getContext, hasContext, clearContext };

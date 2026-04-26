@@ -6,44 +6,94 @@
   <title>LLM Chat</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .tools-bar {
+    .composer-toolbar {
       display: flex;
-      gap: 12px;
+      justify-content: space-between;
       align-items: center;
-      padding: 8px 16px;
-      background: rgba(20, 20, 35, 0.5);
-      border-bottom: 1px solid #222;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
       font-size: 0.85rem;
     }
-    .tools-bar label {
+
+    .composer-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .composer-cot-label {
       display: flex;
       align-items: center;
       gap: 6px;
       cursor: pointer;
       color: #ccc;
     }
-    .tools-bar input[type="checkbox"] {
+
+    .composer-cot-label input[type="checkbox"] {
       width: 16px;
       height: 16px;
       cursor: pointer;
     }
-    .tools-bar button {
+
+    .composer-add {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .composer-plus-btn {
+      width: 42px;
+      min-width: 42px;
+      height: 42px;
+      border: 1px solid #333;
+      border-radius: 12px;
       background: #1a1a2e;
       color: white;
-      border: 1px solid #333;
-      padding: 4px 10px;
-      border-radius: 6px;
+      font-size: 1.4rem;
+      font-weight: 700;
       cursor: pointer;
-      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .tools-bar button:hover {
+
+    .composer-plus-btn:hover {
       background: #2a2a4e;
     }
-    .tools-bar .tools-info {
+
+    .composer-add-label {
+      color: #aaa;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .chat-form {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .chat-form #messageInput {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .chat-form #sendBtn {
+      width: auto;
+      min-width: 140px;
+      flex-shrink: 0;
+    }
+
+    .tools-info {
       color: #888;
       font-size: 0.8rem;
-      margin-left: auto;
     }
+
     .context-badge {
       background: #4a3a8a;
       color: white;
@@ -51,23 +101,221 @@
       border-radius: 10px;
       font-size: 0.75rem;
     }
+
+    .attachment-preview-area {
+      display: none;
+      margin-bottom: 10px;
+    }
+
+    .attachment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #333;
+      border-radius: 16px;
+      background: rgba(26, 26, 46, 0.95);
+      color: white;
+    }
+
+    .attachment-chip-icon {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 10px;
+      background: rgba(108, 142, 239, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .attachment-chip-body {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .attachment-chip-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
+    .attachment-chip-meta {
+      color: #aaa;
+      font-size: 0.78rem;
+    }
+
+    .attachment-chip-remove {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .attachment-chip-remove:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .thread-attachment-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 100%;
+      min-width: 280px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      margin-top: 8px;
+    }
+
+    .thread-attachment-icon {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      border-radius: 12px;
+      background: rgba(108, 142, 239, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+    }
+
+    .thread-attachment-body {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .thread-attachment-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
+    .thread-attachment-meta {
+      color: #aaa;
+      font-size: 0.78rem;
+    }
+
+    .conversation-item-shell {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .conversation-item-body {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .conversation-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .conversation-action-btn {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      padding: 0;
+    }
+
+    .conversation-action-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .conversation-action-btn.danger:hover {
+      background: rgba(255, 86, 86, 0.22);
+    }
+
     .context-modal {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
       z-index: 1000;
       align-items: center;
       justify-content: center;
     }
-    .context-modal.active { display: flex; }
+
+    .context-modal.active {
+      display: flex;
+    }
+
     .context-modal-inner {
       background: #1a1a2e;
       padding: 24px;
       border-radius: 12px;
       width: 90%;
-      max-width: 600px;
+      max-width: 680px;
     }
+
+    .context-source-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .context-upload-btn {
+      background: #1a1a2e;
+      color: white;
+      border: 1px solid #333;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .context-upload-btn:hover {
+      background: #2a2a4e;
+    }
+
+    .context-file-status {
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
     .context-modal textarea {
       width: 100%;
       height: 250px;
@@ -79,11 +327,69 @@
       font-family: monospace;
       resize: vertical;
     }
+
     .context-modal-actions {
       display: flex;
       gap: 10px;
       margin-top: 12px;
       justify-content: flex-end;
+    }
+
+    .drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 20, 0.74);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 950;
+    }
+
+    .drop-overlay.active {
+      display: flex;
+    }
+
+    .drop-card {
+      width: min(520px, 90vw);
+      padding: 34px 28px;
+      border-radius: 28px;
+      background: rgba(24, 27, 46, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+      text-align: center;
+      color: white;
+    }
+
+    .drop-icon {
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #6c8eef, #a972f8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      box-shadow: 0 12px 28px rgba(108, 142, 239, 0.35);
+    }
+
+    .drop-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .drop-subtitle {
+      color: #d8d8e8;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .drop-hint {
+      color: #9ea4c7;
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -111,7 +417,7 @@
         </div>
       </aside>
 
-      <main class="chat-main">
+      <main class="chat-main" id="chatMain">
         <div class="chat-topbar">
           <div>
             <div class="chat-topbar-label">Active Conversation</div>
@@ -125,16 +431,6 @@
           </div>
         </div>
 
-        <div class="tools-bar">
-          <label>
-            <input type="checkbox" id="cotToggle">
-            <span>🧠 Think step-by-step</span>
-          </label>
-          <button id="contextBtn" type="button">📄 Add Context</button>
-          <span id="contextBadge" class="context-badge" style="display:none;">Context loaded</span>
-          <span class="tools-info">Auto-tools: 🧮 Math · 🌤️ Weather</span>
-        </div>
-
         <div class="chat-status-banner" id="chatStatusBanner">
           Continue an existing conversation or start a new one from the sidebar.
         </div>
@@ -142,7 +438,24 @@
         <div class="chat-window-modern" id="chatWindow"></div>
 
         <div class="chat-composer">
+          <div class="composer-toolbar">
+            <div class="composer-toolbar-left">
+              <label class="composer-cot-label">
+                <input type="checkbox" id="cotToggle">
+                <span>Think step-by-step</span>
+              </label>
+              <span id="contextBadge" class="context-badge" style="display:none;">Context loaded</span>
+            </div>
+            <span class="tools-info">Auto-tools: 🧮 Math · 🌤️ Weather</span>
+          </div>
+
+          <div id="attachmentPreviewArea" class="attachment-preview-area"></div>
+
           <form class="chat-form" id="chatForm">
+            <div class="composer-add">
+              <button id="contextBtn" class="composer-plus-btn" type="button" title="Add file or text">+</button>
+              <span class="composer-add-label">Add file or text</span>
+            </div>
             <input type="text" id="messageInput" name="message" placeholder="Type your message here..." autocomplete="off" required>
             <button type="submit" id="sendBtn">Send</button>
           </form>
@@ -151,26 +464,76 @@
     </div>
   </div>
 
-  <!-- Context Upload Modal -->
   <div class="context-modal" id="contextModal">
     <div class="context-modal-inner">
-      <h2 style="color:white;margin-top:0;">Add Context Document</h2>
-      <p style="color:#aaa;font-size:0.9rem;">Paste any text below. The LLM will use it to answer your questions in this conversation.</p>
-      <textarea id="contextText" placeholder="Paste your document, notes, code, or any reference material here..."></textarea>
+      <h2 style="color:white;margin-top:0;">Add file or text</h2>
+      <p style="color:#aaa;font-size:0.9rem;">
+        Paste notes here or upload a text file, PDF, or image. Uploaded file contents will be added to context on your next send.
+      </p>
+
+      <div class="context-source-row">
+        <button class="context-upload-btn" id="contextUploadBtn" type="button">Upload file</button>
+        <input
+          type="file"
+          id="contextFileInput"
+          style="display:none;"
+          accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yml,.yaml,.pdf,.png,.jpg,.jpeg,.webp,.bmp,.gif"
+        >
+        <span class="context-file-status" id="contextFileStatus">Supports text files, PDFs, and images.</span>
+      </div>
+
+      <textarea id="contextText" placeholder="Add optional notes for this conversation..."></textarea>
+
       <div class="context-modal-actions">
         <button class="button button-secondary" id="contextClearBtn" type="button">Clear</button>
         <button class="button button-secondary" id="contextCancelBtn" type="button">Cancel</button>
-        <button class="button" id="contextSaveBtn" type="button" style="background: linear-gradient(135deg, #6c8eef, #a972f8); color: white;">Save Context</button>
+        <button class="button" id="contextSaveBtn" type="button" style="background: linear-gradient(135deg, #6c8eef, #a972f8); color: white;">Stage for Send</button>
       </div>
     </div>
   </div>
 
+  <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-card">
+      <div class="drop-icon">+</div>
+      <div class="drop-title">Add anything</div>
+      <div class="drop-subtitle">Drop one file here to stage it for your next message</div>
+      <div class="drop-hint">Text, PDF, and image files supported</div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <script>
     let activeConversationId = null;
     let allConversations = [];
+    let pendingAttachment = null;
+    let pendingContextText = "";
+    let dragCounter = 0;
+
+    const TEXT_EXTENSIONS = new Set([
+      "txt", "md", "csv", "json", "js", "ts", "jsx", "tsx",
+      "html", "css", "xml", "yml", "yaml", "py", "java",
+      "c", "cpp", "cs", "sql", "rb", "php", "go", "rs"
+    ]);
+
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
 
     function getIdFromUrl() {
       return new URLSearchParams(window.location.search).get("id");
+    }
+
+    function setEmptyConversationState() {
+      activeConversationId = null;
+      document.getElementById("chatTitle").textContent = "Select or start a conversation";
+      document.getElementById("chatStatusBanner").style.display = "block";
+      document.getElementById("chatWindow").innerHTML =
+        '<p style="color:var(--muted);padding:8px;">No active conversation selected.</p>';
+      document.getElementById("contextBadge").style.display = "none";
+      resetLocalContextDraft();
     }
 
     async function loadModels() {
@@ -204,6 +567,66 @@
       renderSidebar(allConversations);
     }
 
+    async function renameConversationFromUI(conversation) {
+      const nextTitle = prompt("Rename conversation:", conversation.title || "");
+      if (nextTitle === null) return;
+
+      const cleanedTitle = nextTitle.trim();
+      if (!cleanedTitle) {
+        alert("Conversation title is required.");
+        return;
+      }
+
+      const res = await fetch(`/api/chat/conversations/${conversation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: cleanedTitle })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not rename conversation." }));
+        alert(err.error || "Could not rename conversation.");
+        return;
+      }
+
+      const updatedConversation = await res.json();
+      await loadConversations();
+
+      if (activeConversationId === conversation.id) {
+        document.getElementById("chatTitle").textContent = updatedConversation.title;
+      }
+    }
+
+    async function deleteConversationFromUI(conversationId) {
+      const confirmed = confirm("Delete this conversation? This cannot be undone.");
+      if (!confirmed) return;
+
+      const wasActive = activeConversationId === conversationId;
+
+      const res = await fetch(`/api/chat/conversations/${conversationId}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not delete conversation." }));
+        alert(err.error || "Could not delete conversation.");
+        return;
+      }
+
+      await loadConversations();
+
+      if (wasActive) {
+        if (allConversations.length > 0) {
+          const nextConversation = allConversations[0];
+          history.pushState(null, "", `/chat?id=${nextConversation.id}`);
+          await openConversation(nextConversation.id);
+        } else {
+          history.pushState(null, "", "/chat");
+          setEmptyConversationState();
+        }
+      }
+    }
+
     function renderSidebar(conversations) {
       const list = document.getElementById("conversationList");
       list.innerHTML = "";
@@ -214,20 +637,68 @@
       }
 
       conversations.forEach((convo) => {
-        const a = document.createElement("a");
-        a.href = `/chat?id=${convo.id}`;
-        a.className = `conversation-item ${convo.id === activeConversationId ? "active" : ""}`;
-        a.innerHTML = `
-          <div class="conversation-title">${escapeHtml(convo.title)}</div>
-          <div class="conversation-preview">${formatDate(convo.updated_at)}</div>
+        const item = document.createElement("div");
+        item.className = `conversation-item ${convo.id === activeConversationId ? "active" : ""}`;
+
+        item.innerHTML = `
+          <div class="conversation-item-shell">
+            <div class="conversation-item-body" role="button" tabindex="0">
+              <div class="conversation-title">${escapeHtml(convo.title)}</div>
+              <div class="conversation-preview">${formatDate(convo.updated_at)}</div>
+            </div>
+            <div class="conversation-actions">
+              <button class="conversation-action-btn" type="button" title="Rename conversation">✏️</button>
+              <button class="conversation-action-btn danger" type="button" title="Delete conversation">🗑️</button>
+            </div>
+          </div>
         `;
-        a.addEventListener("click", (e) => {
-          e.preventDefault();
-          openConversation(convo.id);
+
+        const body = item.querySelector(".conversation-item-body");
+        const renameBtn = item.querySelector(".conversation-action-btn:not(.danger)");
+        const deleteBtn = item.querySelector(".conversation-action-btn.danger");
+
+        const openSelectedConversation = async () => {
+          await openConversation(convo.id);
           history.pushState(null, "", `/chat?id=${convo.id}`);
+        };
+
+        body.addEventListener("click", openSelectedConversation);
+        body.addEventListener("keydown", async (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            await openSelectedConversation();
+          }
         });
-        list.appendChild(a);
+
+        renameBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await renameConversationFromUI(convo);
+        });
+
+        deleteBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await deleteConversationFromUI(convo.id);
+        });
+
+        list.appendChild(item);
       });
+    }
+
+    async function ensureActiveConversation() {
+      if (activeConversationId) return true;
+
+      const res = await fetch("/api/chat/new", { method: "POST" });
+      if (!res.redirected) return false;
+
+      const url = new URL(res.url);
+      activeConversationId = parseInt(url.searchParams.get("id"), 10);
+
+      history.pushState(null, "", `/chat?id=${activeConversationId}`);
+      await loadConversations();
+      await openConversation(activeConversationId);
+      resetLocalContextDraft();
+
+      return true;
     }
 
     async function openConversation(id) {
@@ -240,11 +711,13 @@
         document.getElementById("chatWindow").innerHTML = '<p style="color:var(--danger);padding:8px;">Failed to load conversation.</p>';
         return;
       }
+
       const convo = await res.json();
       document.getElementById("chatTitle").textContent = convo.title;
 
       renderMessages(convo.messages);
       renderSidebar(allConversations);
+      resetLocalContextDraft();
       await checkContextStatus();
     }
 
@@ -268,7 +741,14 @@
         return;
       }
 
-      messages.forEach((msg) => appendMessage(msg.role, msg.content));
+      messages.forEach((msg) => {
+        if (msg.message_type === "attachment") {
+          appendAttachmentMessage(msg);
+        } else {
+          appendMessage(msg.role, msg.content);
+        }
+      });
+
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
@@ -288,13 +768,352 @@
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    function appendAttachmentMessage(message) {
+      const chatWindow = document.getElementById("chatWindow");
+      const isUser = message.role === "user";
+      const kindLabel = getStoredAttachmentKindLabel(message.attachment_kind);
+      const kindIcon = getStoredAttachmentIcon(message.attachment_kind);
+      const sizeLabel = message.attachment_size_bytes ? formatBytes(message.attachment_size_bytes) : "Unknown size";
+
+      const row = document.createElement("div");
+      row.className = `message-row ${isUser ? "message-row-user" : "message-row-bot"}`;
+      row.innerHTML = `
+        <div class="message-bubble ${isUser ? "message-bubble-user" : "message-bubble-bot"}">
+          <span class="message-role">${isUser ? "You" : "LLM"}</span>
+          <div class="thread-attachment-card">
+            <div class="thread-attachment-icon">${kindIcon}</div>
+            <div class="thread-attachment-body">
+              <div class="thread-attachment-name" title="${escapeHtml(message.attachment_name || "Attachment")}">${escapeHtml(message.attachment_name || "Attachment")}</div>
+              <div class="thread-attachment-meta">${escapeHtml(kindLabel)} · ${escapeHtml(sizeLabel)} · added to context</div>
+            </div>
+          </div>
+        </div>
+      `;
+      chatWindow.appendChild(row);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function getFileExtension(filename = "") {
+      const parts = filename.toLowerCase().split(".");
+      return parts.length > 1 ? parts.pop() : "";
+    }
+
+    function isPdfFile(file) {
+      return file.type === "application/pdf" || getFileExtension(file.name) === "pdf";
+    }
+
+    function isImageFile(file) {
+      return file.type.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "bmp", "gif"].includes(getFileExtension(file.name));
+    }
+
+    function isTextLikeFile(file) {
+      return (
+        file.type.startsWith("text/") ||
+        ["application/json", "application/javascript", "application/xml"].includes(file.type) ||
+        TEXT_EXTENSIONS.has(getFileExtension(file.name))
+      );
+    }
+
+    function formatBytes(bytes = 0) {
+      if (!bytes) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function getAttachmentKindValue(file) {
+      if (isPdfFile(file)) return "pdf";
+      if (isImageFile(file)) return "image";
+      return "text";
+    }
+
+    function getAttachmentKindLabel(kind) {
+      if (kind === "pdf") return "PDF";
+      if (kind === "image") return "Image";
+      return "Text";
+    }
+
+    function getStoredAttachmentKindLabel(kind) {
+      return getAttachmentKindLabel((kind || "").toLowerCase());
+    }
+
+    function getAttachmentIcon(file) {
+      const kind = getAttachmentKindValue(file);
+      if (kind === "pdf") return "📄";
+      if (kind === "image") return "🖼️";
+      return "📝";
+    }
+
+    function getStoredAttachmentIcon(kind) {
+      const normalized = (kind || "").toLowerCase();
+      if (normalized === "pdf") return "📄";
+      if (normalized === "image") return "🖼️";
+      return "📝";
+    }
+
+    function setFileStatus(message, isError = false) {
+      const status = document.getElementById("contextFileStatus");
+      status.textContent = message;
+      status.style.color = isError ? "#ff9b9b" : "#aaa";
+    }
+
+    function resetLocalContextDraft() {
+      pendingContextText = "";
+      pendingAttachment = null;
+      document.getElementById("contextText").value = "";
+      document.getElementById("contextFileInput").value = "";
+      renderAttachmentPreview();
+      setFileStatus("Supports text files, PDFs, and images.");
+    }
+
+    function renderAttachmentPreview() {
+      const area = document.getElementById("attachmentPreviewArea");
+
+      if (!pendingAttachment) {
+        area.style.display = "none";
+        area.innerHTML = "";
+        return;
+      }
+
+      area.style.display = "block";
+      area.innerHTML = `
+        <div class="attachment-chip">
+          <div class="attachment-chip-icon">${pendingAttachment.icon}</div>
+          <div class="attachment-chip-body">
+            <div class="attachment-chip-name" title="${escapeHtml(pendingAttachment.name)}">${escapeHtml(pendingAttachment.name)}</div>
+            <div class="attachment-chip-meta">${escapeHtml(pendingAttachment.meta)}</div>
+          </div>
+          <button class="attachment-chip-remove" id="attachmentRemoveBtn" type="button" title="Remove attachment">×</button>
+        </div>
+      `;
+
+      document.getElementById("attachmentRemoveBtn").addEventListener("click", () => {
+        removePendingAttachment();
+      });
+    }
+
+    function removePendingAttachment() {
+      pendingAttachment = null;
+      renderAttachmentPreview();
+      document.getElementById("contextFileInput").value = "";
+      setFileStatus("Supports text files, PDFs, and images.");
+    }
+
+    function setPendingAttachment(file, extractedText) {
+      const cleaned = (extractedText || "").trim() || "[No readable text could be extracted from this file.]";
+      const kindValue = getAttachmentKindValue(file);
+      const kindLabel = getAttachmentKindLabel(kindValue);
+
+      pendingAttachment = {
+        name: file.name,
+        icon: getAttachmentIcon(file),
+        kind: kindValue,
+        sizeBytes: file.size,
+        meta: `${kindLabel} · ${formatBytes(file.size)}`,
+        extractedText: cleaned
+      };
+
+      renderAttachmentPreview();
+      setFileStatus(`${file.name} is staged. Send a message to include it in the chat.`);
+    }
+
+    async function readTextFile(file) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Could not read that text file."));
+        reader.readAsText(file);
+      });
+    }
+
+    async function extractPdfText(file) {
+      if (!window.pdfjsLib) {
+        throw new Error("PDF support failed to load.");
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+      let fullText = "";
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item) => item.str).join(" ").trim();
+
+        if (pageText) {
+          fullText += `\n\n[Page ${pageNum}]\n${pageText}`;
+        }
+      }
+
+      return fullText.trim() || "[No selectable text found in this PDF.]";
+    }
+
+    async function extractImageText(file) {
+      if (!window.Tesseract) {
+        throw new Error("Image OCR support failed to load.");
+      }
+
+      const result = await Tesseract.recognize(file, "eng");
+      return (result?.data?.text || "").trim() || "[No readable text found in this image.]";
+    }
+
+    async function extractTextFromFile(file) {
+      if (isPdfFile(file)) {
+        setFileStatus(`Extracting text from PDF: ${file.name}`);
+        return await extractPdfText(file);
+      }
+
+      if (isImageFile(file)) {
+        setFileStatus(`Reading image text with OCR: ${file.name} (this may take a moment)`);
+        return await extractImageText(file);
+      }
+
+      if (isTextLikeFile(file)) {
+        setFileStatus(`Reading text file: ${file.name}`);
+        return await readTextFile(file);
+      }
+
+      throw new Error("Unsupported file type. Use a text file, PDF, or image.");
+    }
+
+    async function handleSelectedFile(file, { openModal = true } = {}) {
+      if (!file) return;
+
+      const ok = await ensureActiveConversation();
+      if (!ok) {
+        alert("Could not create a conversation for this file.");
+        return;
+      }
+
+      if (openModal) {
+        document.getElementById("contextModal").classList.add("active");
+      } else {
+        document.getElementById("contextModal").classList.remove("active");
+      }
+
+      try {
+        const extractedText = await extractTextFromFile(file);
+        setPendingAttachment(file, extractedText);
+      } catch (err) {
+        console.error("File processing error:", err);
+        setFileStatus(err.message || "Could not process that file.", true);
+      } finally {
+        document.getElementById("contextFileInput").value = "";
+      }
+    }
+
+    function dragHasFiles(event) {
+      return !!event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files");
+    }
+
+    function showDropOverlay() {
+      document.getElementById("dropOverlay").classList.add("active");
+    }
+
+    function hideDropOverlay() {
+      document.getElementById("dropOverlay").classList.remove("active");
+      dragCounter = 0;
+    }
+
+    async function saveAttachmentMessageToServer(attachment) {
+      if (!attachment) return null;
+
+      const res = await fetch(`/api/chat/conversations/${activeConversationId}/attachment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: attachment.name,
+          kind: attachment.kind,
+          sizeBytes: attachment.sizeBytes,
+          contextText: attachment.extractedText
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not save attachment." }));
+        throw new Error(err.error || "Could not save attachment.");
+      }
+
+      return await res.json();
+    }
+
+    async function commitPendingContextForNextSend() {
+      const hasAttachmentText = pendingAttachment && pendingAttachment.extractedText;
+      const hasPendingNotes = pendingContextText && pendingContextText.trim().length > 0;
+
+      if (!hasAttachmentText && !hasPendingNotes) {
+        return false;
+      }
+
+      let finalText = pendingContextText.trim();
+
+      if (hasAttachmentText) {
+        const attachmentBlock = `[Attached file: ${pendingAttachment.name}]\n${pendingAttachment.extractedText}`;
+        finalText = finalText
+          ? `${finalText}\n\n---\n\n${attachmentBlock}`
+          : attachmentBlock;
+      }
+
+      const contextRes = await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: finalText })
+      });
+
+      if (!contextRes.ok) {
+        const err = await contextRes.json().catch(() => ({ error: "Could not save context." }));
+        throw new Error(err.error || "Could not save context.");
+      }
+
+      const data = await contextRes.json();
+      document.getElementById("contextBadge").style.display = data.hasContext ? "inline-block" : "none";
+
+      if (pendingAttachment) {
+        await saveAttachmentMessageToServer(pendingAttachment);
+      }
+
+      return true;
+    }
+
+    async function saveTextOnlyContextNow() {
+      const text = document.getElementById("contextText").value.trim();
+      if (!text) {
+        alert("Add some text or upload a file first.");
+        return false;
+      }
+
+      const res = await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Could not save context." }));
+        throw new Error(err.error || "Could not save context.");
+      }
+
+      const data = await res.json();
+      document.getElementById("contextBadge").style.display = data.hasContext ? "inline-block" : "none";
+      document.getElementById("contextModal").classList.remove("active");
+      document.getElementById("contextText").value = "";
+      pendingContextText = "";
+      setFileStatus("Supports text files, PDFs, and images.");
+      return true;
+    }
+
     document.getElementById("newChatBtn").addEventListener("click", async () => {
       const res = await fetch("/api/chat/new", { method: "POST" });
       if (res.redirected) {
         const url = new URL(res.url);
         const id = parseInt(url.searchParams.get("id"), 10);
         await loadConversations();
-        openConversation(id);
+        await openConversation(id);
         history.pushState(null, "", `/chat?id=${id}`);
       }
     });
@@ -304,41 +1123,54 @@
 
       const input = document.getElementById("messageInput");
       const content = input.value.trim();
-      if (!content) return;
 
-      // Auto-create a new conversation if none is active
-      if (!activeConversationId) {
-        const res = await fetch("/api/chat/new", { method: "POST" });
-        if (res.redirected) {
-          const url = new URL(res.url);
-          activeConversationId = parseInt(url.searchParams.get("id"), 10);
-          await loadConversations();
-          history.pushState(null, "", `/chat?id=${activeConversationId}`);
-          document.getElementById("chatStatusBanner").style.display = "none";
-          document.getElementById("chatWindow").innerHTML = "";
-        } else {
-          return;
-        }
+      if (!content && pendingAttachment) {
+        alert("Type a message before sending your staged file.");
+        return;
       }
 
-      input.value = "";
+      if (!content) return;
+
+      const ok = await ensureActiveConversation();
+      if (!ok) return;
+
       document.getElementById("sendBtn").disabled = true;
 
-      appendMessage("user", content);
-
-      const thinking = document.createElement("div");
-      thinking.className = "message-row message-row-bot";
-      thinking.id = "thinkingRow";
-      thinking.innerHTML = `
-        <div class="message-bubble message-bubble-bot">
-          <span class="message-role">LLM</span>
-          <p style="color:var(--muted);font-style:italic;">Thinking...</p>
-        </div>
-      `;
-      document.getElementById("chatWindow").appendChild(thinking);
-      document.getElementById("chatWindow").scrollTop = document.getElementById("chatWindow").scrollHeight;
+      const stagedAttachment = pendingAttachment ? { ...pendingAttachment } : null;
+      const stagedNotes = pendingContextText;
 
       try {
+        if (stagedAttachment || (stagedNotes && stagedNotes.trim())) {
+          await commitPendingContextForNextSend();
+
+          if (stagedAttachment) {
+            appendAttachmentMessage({
+              role: "user",
+              message_type: "attachment",
+              attachment_name: stagedAttachment.name,
+              attachment_kind: stagedAttachment.kind,
+              attachment_size_bytes: stagedAttachment.sizeBytes
+            });
+          }
+
+          resetLocalContextDraft();
+        }
+
+        input.value = "";
+        appendMessage("user", content);
+
+        const thinking = document.createElement("div");
+        thinking.className = "message-row message-row-bot";
+        thinking.id = "thinkingRow";
+        thinking.innerHTML = `
+          <div class="message-bubble message-bubble-bot">
+            <span class="message-role">LLM</span>
+            <p style="color:var(--muted);font-style:italic;">Thinking...</p>
+          </div>
+        `;
+        document.getElementById("chatWindow").appendChild(thinking);
+        document.getElementById("chatWindow").scrollTop = document.getElementById("chatWindow").scrollHeight;
+
         const selectedModel = document.getElementById("modelSelector").value;
         const chainOfThought = document.getElementById("cotToggle").checked;
         const res = await fetch(`/api/chat/conversations/${activeConversationId}/message`, {
@@ -358,15 +1190,23 @@
           appendMessage("assistant", data.assistantMessage.content);
 
           await loadConversations();
+          await checkContextStatus();
+
           const updated = allConversations.find(c => c.id === activeConversationId);
           if (updated) {
             document.getElementById("chatTitle").textContent = updated.title;
+          }
+
+          if (stagedAttachment) {
+            setFileStatus(`${stagedAttachment.name} sent with your message.`);
+          } else {
+            setFileStatus("Supports text files, PDFs, and images.");
           }
         }
       } catch (err) {
         const row = document.getElementById("thinkingRow");
         if (row) row.remove();
-        appendMessage("assistant", "Network error. Please try again.");
+        appendMessage("assistant", `Error: ${err.message || "Network error. Please try again."}`);
       }
 
       document.getElementById("sendBtn").disabled = false;
@@ -378,46 +1218,124 @@
       renderSidebar(filtered);
     });
 
-    // Context modal handlers
-    document.getElementById("contextBtn").addEventListener("click", () => {
-      if (!activeConversationId) {
-        alert("Please start a conversation first before adding context.");
-        return;
-      }
+    document.getElementById("contextBtn").addEventListener("click", async () => {
+      const ok = await ensureActiveConversation();
+      if (!ok) return;
+
+      document.getElementById("contextText").value = pendingContextText;
       document.getElementById("contextModal").classList.add("active");
     });
 
+    document.getElementById("contextUploadBtn").addEventListener("click", async () => {
+      const ok = await ensureActiveConversation();
+      if (!ok) return;
+      document.getElementById("contextFileInput").click();
+    });
+
+    document.getElementById("contextFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        await handleSelectedFile(file, { openModal: true });
+      }
+    });
+
     document.getElementById("contextCancelBtn").addEventListener("click", () => {
+      document.getElementById("contextText").value = pendingContextText;
       document.getElementById("contextModal").classList.remove("active");
+    });
+
+    document.getElementById("contextModal").addEventListener("click", (e) => {
+      if (e.target.id === "contextModal") {
+        document.getElementById("contextText").value = pendingContextText;
+        document.getElementById("contextModal").classList.remove("active");
+      }
     });
 
     document.getElementById("contextClearBtn").addEventListener("click", async () => {
-      if (!activeConversationId) return;
-      await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "" })
-      });
+      pendingContextText = "";
       document.getElementById("contextText").value = "";
+      removePendingAttachment();
+
+      if (activeConversationId) {
+        await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: "" })
+        });
+      }
+
       document.getElementById("contextBadge").style.display = "none";
       document.getElementById("contextModal").classList.remove("active");
+      setFileStatus("Supports text files, PDFs, and images.");
     });
 
     document.getElementById("contextSaveBtn").addEventListener("click", async () => {
-      if (!activeConversationId) return;
-      const text = document.getElementById("contextText").value;
-      const res = await fetch(`/api/chat/conversations/${activeConversationId}/context`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-      const data = await res.json();
-      document.getElementById("contextBadge").style.display = data.hasContext ? "inline-block" : "none";
-      document.getElementById("contextModal").classList.remove("active");
+      try {
+        const noteText = document.getElementById("contextText").value.trim();
+
+        if (pendingAttachment) {
+          pendingContextText = noteText;
+          document.getElementById("contextModal").classList.remove("active");
+          setFileStatus(`${pendingAttachment.name} is staged. Send a message to include it in the chat.`);
+          return;
+        }
+
+        pendingContextText = noteText;
+        await saveTextOnlyContextNow();
+      } catch (err) {
+        alert(err.message || "Could not save context.");
+      }
+    });
+
+    document.addEventListener("dragenter", (e) => {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();
+      dragCounter += 1;
+      showDropOverlay();
+    });
+
+    document.addEventListener("dragover", (e) => {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
+      }
+      showDropOverlay();
+    });
+
+    document.addEventListener("dragleave", (e) => {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();
+      dragCounter -= 1;
+      if (dragCounter <= 0) {
+        hideDropOverlay();
+      }
+    });
+
+    document.addEventListener("drop", async (e) => {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();
+      hideDropOverlay();
+
+      const files = Array.from(e.dataTransfer.files || []);
+      if (files.length === 0) return;
+
+      if (files.length > 1) {
+        setFileStatus("Multiple files dropped. Using the first file only.");
+      }
+
+      try {
+        await handleSelectedFile(files[0], { openModal: false });
+      } catch (err) {
+        alert(err.message || "Could not stage dropped file.");
+      }
     });
 
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
     }
 
     function formatDate(ts) {
@@ -431,16 +1349,18 @@
       return d.toLocaleDateString();
     }
 
-    // Initialize
     (async () => {
       await loadModels();
       await loadConversations();
+
       const urlId = getIdFromUrl();
       if (urlId) {
         const id = parseInt(urlId, 10);
         if (allConversations.find(c => c.id === id)) {
-          openConversation(id);
+          await openConversation(id);
         }
+      } else {
+        setEmptyConversationState();
       }
     })();
   </script>

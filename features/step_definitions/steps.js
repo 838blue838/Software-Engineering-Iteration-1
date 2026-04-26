@@ -1,174 +1,244 @@
-const { Given, When, Then, Before } = require('@cucumber/cucumber');
-const assert = require('assert');
-const http = require('http');
+const { Before, After, Given, When, Then, setDefaultTimeout } = require("@cucumber/cucumber");
+const assert = require("node:assert/strict");
+const puppeteer = require("puppeteer");
 
-let lastResponse = null;
-let sessionCookie = null;
-let activeConversationId = null;
+setDefaultTimeout(60 * 1000);
 
-function makeRequest(method, path, body) {
-  return new Promise((resolve, reject) => {
-    const data = body ? JSON.stringify(body) : '';
-    const options = {
-      hostname: 'localhost',
-      port: 3000,
-      path,
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(data),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {})
-      }
-    };
-    const req = http.request(options, (res) => {
-      let raw = '';
-      if (res.headers['set-cookie']) sessionCookie = res.headers['set-cookie'][0];
-      res.on('data', chunk => raw += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: raw, headers: res.headers }));
-    });
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+
+async function clearAndType(page, selector, text) {
+  await page.waitForSelector(selector);
+  await page.click(selector, { clickCount: 3 });
+  await page.keyboard.press("Backspace");
+  await page.type(selector, text);
 }
 
-// Create login test user before scenarios that need it
-Before({ tags: '@requiresUser' }, async function () {
-  await makeRequest('POST', '/api/auth/reset-users', {});
-  await makeRequest('POST', '/api/auth/signup', {
-    username: 'testuser_login',
-    password: 'Password1'
-  });
-});
+async function waitForText(page, selector, text) {
+  await page.waitForFunction(
+    ({ selector, text }) => {
+      const el = document.querySelector(selector);
+      return el && el.innerText.includes(text);
+    },
+    {},
+    { selector, text }
+  );
+}
 
-// Reset session before each scenario
 Before(async function () {
-  sessionCookie = null;
-  lastResponse = null;
-  activeConversationId = null;
+  this.browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+
+  this.page = await this.browser.newPage();
+  await this.page.setViewport({ width: 1400, height: 900 });
 });
 
-// Auth steps
-Given('I am on the signup page', function () {});
-Given('I am on the login page', function () {});
-
-Given('I am logged in as {string} with password {string}', async function (username, password) {
-  lastResponse = await makeRequest('POST', '/api/auth/login', { username, password });
+After(async function () {
+  if (this.browser) {
+    await this.browser.close();
+  }
 });
 
-When('I enter username {string} and password {string}', function (username, password) {
-  this.username = username;
-  this.password = password;
+Given("I am logged in as {string} with password {string}", async function (username, password) {
+  await this.page.goto(BASE_URL, { waitUntil: "networkidle2" });
+
+  await this.page.evaluate(async () => {
+    await fetch("/api/auth/reset-users", { method: "POST" });
+  });
+
+  await this.page.goto(`${BASE_URL}/signup`, { waitUntil: "networkidle2" });
+
+  await clearAndType(this.page, "#username", username);
+  await clearAndType(this.page, "#password", password);
+
+  await Promise.all([
+    this.page.waitForNavigation({ waitUntil: "networkidle2" }),
+    this.page.click('button[type="submit"]')
+  ]);
+
+  assert(this.page.url().includes("/dashboard"));
 });
 
-When('I click the signup button', async function () {
-  lastResponse = await makeRequest('POST', '/api/auth/signup', {
-    username: this.username,
-    password: this.password
+When("I open the chat page", async function () {
+  await this.page.goto(`${BASE_URL}/chat`, { waitUntil: "networkidle2" });
+  await this.page.waitForSelector("#messageInput");
+});
+
+When("I create a new conversation", async function () {
+  await this.page.waitForSelector("#newChatBtn");
+  await this.page.click("#newChatBtn");
+
+  await this.page.waitForFunction(() => {
+    return new URL(window.location.href).searchParams.get("id");
   });
 });
 
-When('I click the login button', async function () {
-  lastResponse = await makeRequest('POST', '/api/auth/login', {
-    username: this.username,
-    password: this.password
+Then("I should see the model selector", async function () {
+  await this.page.waitForSelector("#modelSelector");
+  await this.page.waitForFunction(() => {
+    const select = document.querySelector("#modelSelector");
+    return !!select && select.querySelectorAll("optgroup").length > 0;
   });
 });
 
-When('I click the logout button', async function () {
-  lastResponse = await makeRequest('POST', '/api/auth/logout', '');
-});
-
-Then('I should be redirected to the dashboard', function () {
-  assert.ok(
-    lastResponse.status === 200 || lastResponse.status === 302,
-    `Expected success but got ${lastResponse.status}`
+Then("the model selector should include provider labels", async function (dataTable) {
+  const labels = await this.page.$$eval("#modelSelector optgroup", (groups) =>
+    groups.map((g) => g.label)
   );
+
+  for (const [expected] of dataTable.raw()) {
+    assert(
+      labels.some((label) => label.includes(expected)),
+      `Expected a provider label containing "${expected}", but got: ${labels.join(", ")}`
+    );
+  }
 });
 
-Then('I should be redirected to the home page', function () {
-  assert.ok(
-    lastResponse.status === 200 || lastResponse.status === 302,
-    `Expected redirect but got ${lastResponse.status}`
+When("I type {string} into the chat box", async function (text) {
+  await clearAndType(this.page, "#messageInput", text);
+});
+
+When("I send the chat message", async function () {
+  await this.page.click("#sendBtn");
+
+  await this.page.waitForFunction(() => {
+    const chat = document.querySelector("#chatWindow");
+    const sendBtn = document.querySelector("#sendBtn");
+    const thinkingRow = document.querySelector("#thinkingRow");
+    return chat && sendBtn && !sendBtn.disabled && !thinkingRow && chat.innerText.length > 0;
+  });
+});
+
+Then("the URL should contain {string}", async function (fragment) {
+  await this.page.waitForFunction(
+    (value) => window.location.href.includes(value),
+    {},
+    fragment
   );
+
+  assert(this.page.url().includes(fragment));
 });
 
-Then('I should see an error message', function () {
-  assert.ok(
-    lastResponse.status === 400 || lastResponse.status === 401 ||
-    lastResponse.status === 409 || lastResponse.status === 302,
-    `Expected error status but got ${lastResponse.status}`
+Then("I should see {string} in the chat window", async function (text) {
+  await waitForText(this.page, "#chatWindow", text);
+
+  const chatText = await this.page.$eval("#chatWindow", (el) => el.innerText);
+  assert(chatText.includes(text));
+});
+
+Then("I should see a conversation titled {string} in the sidebar", async function (title) {
+  await waitForText(this.page, "#conversationList", title);
+
+  const sidebarText = await this.page.$eval("#conversationList", (el) => el.innerText);
+  assert(sidebarText.includes(title));
+});
+
+Then("I should not see a conversation titled {string} in the sidebar", async function (title) {
+  await this.page.waitForFunction(
+    (value) => {
+      const list = document.querySelector("#conversationList");
+      return list && !list.innerText.includes(value);
+    },
+    {},
+    title
   );
+
+  const sidebarText = await this.page.$eval("#conversationList", (el) => el.innerText);
+  assert(!sidebarText.includes(title));
 });
 
-// Chat steps
-When('I create a new conversation', async function () {
-  lastResponse = await makeRequest('POST', '/api/chat/new', {});
+When("I rename the active conversation in the sidebar to {string}", async function (newTitle) {
+  await this.page.waitForSelector(".conversation-item.active");
+  this.page.once("dialog", async (dialog) => {
+    assert.equal(dialog.type(), "prompt");
+    await dialog.accept(newTitle);
+  });
+
+  await this.page.click(".conversation-item.active .conversation-action-btn");
+  await waitForText(this.page, "#conversationList", newTitle);
 });
 
-Then('I should receive a conversation ID', function () {
-  // new conversation redirects to /chat?id=N — check redirect happened
-  assert.ok(
-    lastResponse.status === 302 || lastResponse.status === 200,
-    `Expected redirect but got ${lastResponse.status}`
+When("I delete the active conversation from the sidebar", async function () {
+  await this.page.waitForSelector(".conversation-item.active");
+
+  this.page.once("dialog", async (dialog) => {
+    assert.equal(dialog.type(), "confirm");
+    await dialog.accept();
+  });
+
+  await this.page.click(".conversation-item.active .conversation-action-btn.danger");
+  await this.page.waitForFunction(() => {
+    const status = document.querySelector("#chatStatusBanner");
+    return status && status.innerText.length > 0;
+  });
+});
+
+Then("the chat title should be {string}", async function (title) {
+  await waitForText(this.page, "#chatTitle", title);
+
+  const chatTitle = await this.page.$eval("#chatTitle", (el) => el.innerText);
+  assert.equal(chatTitle.trim(), title);
+});
+
+When("I open the history page", async function () {
+  await this.page.goto(`${BASE_URL}/history`, { waitUntil: "networkidle2" });
+  await this.page.waitForSelector("#historySearch");
+});
+
+When("I search history for {string}", async function (term) {
+  await clearAndType(this.page, "#historySearch", term);
+  await this.page.click("#searchBtn");
+});
+
+Then("I should see a history card containing {string}", async function (text) {
+  await waitForText(this.page, "#historyGrid", text);
+
+  const gridText = await this.page.$eval("#historyGrid", (el) => el.innerText);
+  assert(gridText.includes(text));
+});
+
+Then("I should not see a history card containing {string}", async function (text) {
+  await this.page.waitForFunction(
+    (value) => {
+      const grid = document.querySelector("#historyGrid");
+      return grid && !grid.innerText.includes(value);
+    },
+    {},
+    text
   );
-  const location = lastResponse.headers['location'] || '';
-  const match = location.match(/[?&]id=(\d+)/);
-  assert.ok(match, `Expected location header with id, got: ${location}`);
-  activeConversationId = parseInt(match[1], 10);
+
+  const gridText = await this.page.$eval("#historyGrid", (el) => el.innerText);
+  assert(!gridText.includes(text));
 });
 
-Given('I have an active conversation', async function () {
-  lastResponse = await makeRequest('POST', '/api/chat/new', {});
-  const location = lastResponse.headers['location'] || '';
-  const match = location.match(/[?&]id=(\d+)/);
-  assert.ok(match, `Could not get conversation id from redirect: ${location}`);
-  activeConversationId = parseInt(match[1], 10);
+When("I rename the first history conversation to {string}", async function (newTitle) {
+  await this.page.waitForSelector(".history-card");
+
+  this.page.once("dialog", async (dialog) => {
+    assert.equal(dialog.type(), "prompt");
+    await dialog.accept(newTitle);
+  });
+
+  await this.page.click(".history-card .history-action-btn");
+  await waitForText(this.page, "#historyGrid", newTitle);
 });
 
-When('I send the message {string}', async function (message) {
-  lastResponse = await makeRequest(
-    'POST',
-    `/api/chat/conversations/${activeConversationId}/message`,
-    { content: message }
+When("I delete the first history conversation", async function () {
+  await this.page.waitForSelector(".history-card");
+
+  const beforeCount = await this.page.$$eval(".history-card", (cards) => cards.length);
+
+  this.page.once("dialog", async (dialog) => {
+    assert.equal(dialog.type(), "confirm");
+    await dialog.accept();
+  });
+
+  await this.page.click(".history-card .history-action-btn.danger");
+
+  await this.page.waitForFunction(
+    (count) => document.querySelectorAll(".history-card").length < count,
+    {},
+    beforeCount
   );
-});
-
-Then('I should receive an assistant reply', function () {
-  assert.strictEqual(lastResponse.status, 200, `Expected 200 but got ${lastResponse.status}: ${lastResponse.body}`);
-  const data = JSON.parse(lastResponse.body);
-  assert.ok(data.assistantMessage, 'Expected assistantMessage in response');
-  assert.ok(data.assistantMessage.content, 'Expected assistant message to have content');
-});
-
-When('I fetch the conversation', async function () {
-  lastResponse = await makeRequest('GET', `/api/chat/conversations/${activeConversationId}`, '');
-});
-
-Then('the conversation should contain at least 1 message', function () {
-  assert.strictEqual(lastResponse.status, 200);
-  const data = JSON.parse(lastResponse.body);
-  assert.ok(Array.isArray(data.messages), 'Expected messages array');
-  assert.ok(data.messages.length >= 1, `Expected at least 1 message, got ${data.messages.length}`);
-});
-
-// History steps
-When('I fetch my conversation history', async function () {
-  lastResponse = await makeRequest('GET', '/api/chat/conversations', '');
-});
-
-Then('I should receive a list of conversations', function () {
-  assert.strictEqual(lastResponse.status, 200, `Expected 200 but got ${lastResponse.status}`);
-  const data = JSON.parse(lastResponse.body);
-  assert.ok(Array.isArray(data), 'Expected an array of conversations');
-});
-
-When('I search my history for {string}', async function (term) {
-  lastResponse = await makeRequest('GET', `/api/chat/search?q=${encodeURIComponent(term)}`, '');
-});
-
-Then('I should receive search results', function () {
-  assert.strictEqual(lastResponse.status, 200, `Expected 200 but got ${lastResponse.status}`);
-  const data = JSON.parse(lastResponse.body);
-  assert.ok(Array.isArray(data), 'Expected an array of search results');
 });
