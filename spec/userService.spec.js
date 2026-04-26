@@ -125,7 +125,7 @@ describe("userService", () => {
 
   it("rejects a password without a capital letter", async () => {
     try {
-      await userService.createUser("testuser1", "Password1");
+      await userService.createUser("testuser1", "password1");
       fail("Expected error was not thrown");
     } catch (err) {
       expect(err.message).toContain("Password must be");
