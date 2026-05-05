@@ -4,3 +4,8 @@ Feature 3: Protected routes and session management. [PR 2](https://github.com/Al
 Feature 4: Save conversation history. [PR 7](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/7)  
 Feature 5: Search conversation history. [PR 8](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/8)  
 Feature 6: Chat with LLM through Ollama. [PR 8](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/8)
+Feature 7: Select the backend LLM. [PR 11](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/11)  
+Feature 8: Include small models that can run locally. [PR 11](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/11)  
+Feature 9: Access publicly accessible models such as GPT, Gemini, and Claude. [PR 11](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/11)  
+Feature 10: Ask math questions to the backend LLM. [PR 11](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/11)  
+Feature 11: Ask about the weather to the backend LLM. [PR 11](https://github.com/838blue838/Software-Engineering-Iteration-1/pull/11)
