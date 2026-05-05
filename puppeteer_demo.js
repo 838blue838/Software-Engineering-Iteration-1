@@ -45,40 +45,29 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     );
   }
 
-  async function clickText(text) {
-    const elements = await page.$$("a, button");
-    for (const element of elements) {
-      const value = await page.evaluate(el => (el.textContent || "").trim(), element);
-      if (value.includes(text)) {
-        await element.click();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  async function selectFirstAvailableModel() {
+  async function selectGeminiFlash() {
     await page.waitForSelector("#modelSelector", { visible: true });
 
     await page.waitForFunction(() => {
       const selector = document.querySelector("#modelSelector");
-      return selector && selector.querySelectorAll("option").length > 0;
+      if (!selector) return false;
+
+      const option = Array.from(selector.querySelectorAll("option"))
+        .find(opt => opt.value === "gemini-2.5-flash");
+
+      return option && !option.disabled;
     });
 
-    const selectedModel = await page.evaluate(() => {
-      const selector = document.querySelector("#modelSelector");
-      const options = Array.from(selector.querySelectorAll("option"));
-      const available = options.find(option => option.value && !option.disabled);
+    await page.select("#modelSelector", "gemini-2.5-flash");
 
-      if (!available) return null;
+    const selectedModel = await page.$eval("#modelSelector", el => el.value);
 
-      selector.value = available.value;
-      selector.dispatchEvent(new Event("change", { bubbles: true }));
-      return available.value;
-    });
+    if (selectedModel !== "gemini-2.5-flash") {
+      throw new Error(`Expected Gemini Flash to be selected, but got ${selectedModel}`);
+    }
 
-    console.log("Selected model:", selectedModel || "No available model selected");
-    await sleep(1000);
+    console.log("Selected model: gemini-2.5-flash");
+    await sleep(1200);
   }
 
   async function startNewChat() {
@@ -207,8 +196,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     await page.waitForSelector("#newChatBtn", { visible: true });
     await page.waitForSelector("#modelSelector", { visible: true });
 
-    await step("Step 5: Showing model provider selector...");
-    await selectFirstAvailableModel();
+    await step("Step 5: Selecting Gemini 2.5 Flash from the model selector...");
+    await selectGeminiFlash();
 
     await step("Step 6: Starting a new conversation...");
     await startNewChat();
@@ -222,7 +211,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
       "Project context: This application is an LLM Web UI for comparing models, saving conversations, searching history, and using tools like math and weather."
     );
 
-    await step("Step 9: Asking a context-aware question...");
+    await step("Step 9: Sending a real prompt through Gemini 2.5 Flash...");
     await sendChatMessage("Using the context I added, summarize what this project does in one short sentence.");
 
     await step("Step 10: Renaming the active conversation from the sidebar...");
@@ -230,55 +219,60 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     await step("Step 11: Creating a temporary conversation to demonstrate delete...");
     await startNewChat();
-    await sendChatMessage("delete me from sidebar");
-    await waitForText("#conversationList", "delete me from sidebar");
 
-    await step("Step 12: Deleting the temporary conversation from the sidebar...");
+    await step("Step 12: Confirming Gemini 2.5 Flash is still selected...");
+    await selectGeminiFlash();
+
+    await step("Step 13: Sending a Gemini prompt in the temporary conversation...");
+    await sendChatMessage("Write the phrase delete me from sidebar exactly once.");
+    await waitForText("#conversationList", "Write the phrase delete me from sidebar exactly once.");
+
+    await step("Step 14: Deleting the temporary conversation from the sidebar...");
     await deleteActiveConversation();
 
-    await step("Step 13: Opening conversation history...");
+    await step("Step 15: Opening conversation history...");
     await goto("/history");
     await page.waitForSelector("#historySearch", { visible: true });
     await page.waitForSelector("#historyGrid", { visible: true });
     await sleep(1000);
 
-    await step("Step 14: Searching history for the renamed conversation...");
+    await step("Step 16: Searching history for the renamed conversation...");
     await clearAndType("#historySearch", "Final Presentation Demo");
     await page.click("#searchBtn");
     await waitForText("#historyGrid", "Final Presentation Demo");
     await sleep(1500);
 
-    await step("Step 15: Reopening the conversation from history...");
+    await step("Step 17: Reopening the conversation from history...");
     await page.click(".history-card .history-card-body");
     await page.waitForFunction(() => window.location.href.includes("/chat?id="));
     await waitForText("#chatTitle", "Final Presentation Demo");
     await sleep(1500);
 
-    await step("Step 16: Returning to dashboard...");
+    await step("Step 18: Returning to dashboard...");
     await goto("/dashboard");
     await page.waitForSelector("h1", { visible: true });
     await sleep(1200);
 
-    await step("Step 17: Logging out...");
-await goto("/logout.html");
-await page.waitForSelector('button[type="submit"]', { visible: true });
+    await step("Step 19: Logging out...");
+    await goto("/logout.html");
+    await page.waitForSelector('button[type="submit"]', { visible: true });
 
-await Promise.all([
-  page.waitForFunction(
-    () =>
-      window.location.href.includes("logout-success") ||
-      window.location.href === "http://localhost:3000/" ||
-      document.body.innerText.toLowerCase().includes("logout"),
-    { timeout: 5000 }
-  ).catch(() => {}),
-  page.click('button[type="submit"]')
-]);
+    await Promise.all([
+      page.waitForFunction(
+        () =>
+          window.location.href.includes("logout-success") ||
+          window.location.href === "http://localhost:3000/" ||
+          document.body.innerText.toLowerCase().includes("logout"),
+        { timeout: 5000 }
+      ).catch(() => {}),
+      page.click('button[type="submit"]')
+    ]);
 
-console.log("After logout URL:", page.url());
+    console.log("After logout URL:", page.url());
 
-console.log("\n✅ Final presentation demo complete.");
-await sleep(700);
-await browser.close();
+    console.log("\n✅ Final presentation demo complete.");
+    await sleep(700);
+    await browser.close();
   } catch (error) {
     console.error("❌ Puppeteer demo failed:", error.message);
 

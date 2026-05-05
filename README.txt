@@ -56,6 +56,7 @@ DB_USER=<your_mysql_user>
 DB_PASSWORD=<your_mysql_password>
 DB_NAME=<your_database_name>
 DB_PORT=3306
+GEMINI_API_KEY=Your API KEY
 SESSION_SECRET=<any_random_string>
 PORT=3000
 ```
